@@ -26,7 +26,14 @@ export default function AssignmentEditor() {
           </p>
           <p>
             Submit a link to the landing page of your Web application running on{" "}
-            <a href="#">Netlify</a>.
+            <a
+              href="https://a2--kanbas-ankur-a1.netlify.app/#/Kanbas/Dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Netlify
+            </a>
+            .
           </p>
           <p>The landing page should include the following:</p>
           <ul>
