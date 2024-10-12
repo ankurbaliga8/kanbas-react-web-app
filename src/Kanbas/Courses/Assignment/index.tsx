@@ -1,5 +1,7 @@
 import React from "react";
+import { useParams, Link } from "react-router-dom";
 import { FaMagnifyingGlass } from "react-icons/fa6";
+import { FaCheckCircle } from "react-icons/fa";
 import {
   BsPencilSquare,
   BsGripVertical,
@@ -7,9 +9,16 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { RxTriangleDown } from "react-icons/rx";
-import { FaCheckCircle } from "react-icons/fa";
+import * as db from "../../Database";
 
 export default function Assignments() {
+  const { cid } = useParams();
+  const assignments = db.assignments;
+
+  const filteredAssignments = assignments.filter(
+    (assignment: any) => assignment.course === cid
+  );
+
   return (
     <div id="wd-assignments" className="p-3">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -48,99 +57,40 @@ export default function Assignments() {
         </div>
 
         <ul id="wd-assignment-list" className="list-group">
-          <li
-            className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
-            style={{ borderLeft: "5px solid green", borderRadius: "0" }}
-          >
-            <div className="d-flex align-items-center">
-              <BsGripVertical className="me-3 fs-5 text-muted" />
-              <BsPencilSquare className="me-2 fs-5 text-muted" />
-              <div>
-                <a
-                  href="#/Kanbas/Courses/1234/Assignments/123"
-                  className="text-dark fw-bold text-decoration-none"
-                >
-                  A1
-                </a>
-                <br />
-                <small className="text-muted">
-                  <span className="text-danger">Multiple Modules</span> |{" "}
-                  <strong>Not available until</strong> May 6 at 12:00am |
-                </small>
-                <br />
-                <small className="text-muted">
-                  <strong>Due</strong> May 13 at 11:59pm | 100 pts
-                </small>
+          {filteredAssignments.map((assignment: any) => (
+            <li
+              key={assignment._id}
+              className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
+              style={{ borderLeft: "5px solid green", borderRadius: "0" }}
+            >
+              <div className="d-flex align-items-center">
+                <BsGripVertical className="me-3 fs-5 text-muted" />
+                <BsPencilSquare className="me-2 fs-5 text-muted" />
+                <div>
+                  <Link
+                    to={`/Kanbas/Courses/${cid}/Assignments/${assignment._id}`}
+                    className="text-dark fw-bold text-decoration-none"
+                  >
+                    {assignment.title}
+                  </Link>
+                  <br />
+                  <small className="text-muted">
+                    <span className="text-danger">Multiple Modules</span> |{" "}
+                    <strong>Not available until</strong> May 6 at 12:00am |
+                  </small>
+                  <br />
+                  <small className="text-muted">
+                    <strong>Due</strong> May 13 at 11:59pm | 100 pts
+                  </small>
+                </div>
               </div>
-            </div>
 
-            <div className="d-flex align-items-center">
-              <FaCheckCircle className="text-success me-3" />
-              <BsThreeDotsVertical className="text-muted" />
-            </div>
-          </li>
-
-          <li
-            className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
-            style={{ borderLeft: "5px solid green", borderRadius: "0" }}
-          >
-            <div className="d-flex align-items-center">
-              <BsGripVertical className="me-3 fs-5 text-muted" />
-              <BsPencilSquare className="me-2 fs-5 text-muted" />
-              <div>
-                <a
-                  href="#/Kanbas/Courses/1234/Assignments/124"
-                  className="text-dark fw-bold text-decoration-none"
-                >
-                  A2
-                </a>
-                <br />
-                <small className="text-muted">
-                  <span className="text-danger">Multiple Modules</span> |{" "}
-                  <strong>Not available until</strong> May 13 at 12:00am |
-                </small>
-                <br />
-                <small className="text-muted">
-                  <strong>Due</strong> May 20 at 11:59pm | 100 pts
-                </small>
+              <div className="d-flex align-items-center">
+                <FaCheckCircle className="text-success me-3" />
+                <BsThreeDotsVertical className="text-muted" />
               </div>
-            </div>
-            <div className="d-flex align-items-center">
-              <FaCheckCircle className="text-success me-3" />
-              <BsThreeDotsVertical className="text-muted" />
-            </div>
-          </li>
-
-          <li
-            className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
-            style={{ borderLeft: "5px solid green", borderRadius: "0" }}
-          >
-            <div className="d-flex align-items-center">
-              <BsGripVertical className="me-3 fs-5 text-muted" />
-              <BsPencilSquare className="me-2 fs-5 text-muted" />
-              <div>
-                <a
-                  href="#/Kanbas/Courses/1234/Assignments/125"
-                  className="text-dark fw-bold text-decoration-none"
-                >
-                  A3
-                </a>
-                <br />
-                <small className="text-muted">
-                  <span className="text-danger">Multiple Modules</span> |{" "}
-                  <strong>Not available until</strong> May 20 at 12:00am |
-                </small>
-                <br />
-                <small className="text-muted">
-                  <strong>Due</strong> May 27 at 11:59pm | 100 pts
-                </small>
-              </div>
-            </div>
-            <div className="d-flex align-items-center">
-              <FaCheckCircle className="text-success me-3" />
-              <BsThreeDotsVertical className="text-muted" />
-            </div>
-          </li>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
