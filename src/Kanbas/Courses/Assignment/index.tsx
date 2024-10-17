@@ -1,7 +1,6 @@
 import React from "react";
 import { useParams, Link } from "react-router-dom";
-import { FaMagnifyingGlass } from "react-icons/fa6";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaSearch } from "react-icons/fa";
 import {
   BsPencilSquare,
   BsGripVertical,
@@ -9,6 +8,8 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { RxTriangleDown } from "react-icons/rx";
+import { FaMagnifyingGlass } from "react-icons/fa6";
+
 import * as db from "../../Database";
 
 export default function Assignments() {
@@ -16,8 +17,20 @@ export default function Assignments() {
   const assignments = db.assignments;
 
   const filteredAssignments = assignments.filter(
-    (assignment: any) => assignment.course === cid
+    (assignment) => assignment.course === cid
   );
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+
+    const year = date.getUTCFullYear();
+    const month = date.toLocaleString("default", {
+      month: "long",
+      timeZone: "UTC",
+    });
+    const day = date.getUTCDate();
+    return `${month} ${day}, ${year}`;
+  };
 
   return (
     <div id="wd-assignments" className="p-3">
@@ -57,7 +70,7 @@ export default function Assignments() {
         </div>
 
         <ul id="wd-assignment-list" className="list-group">
-          {filteredAssignments.map((assignment: any) => (
+          {filteredAssignments.map((assignment) => (
             <li
               key={assignment._id}
               className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
@@ -76,11 +89,13 @@ export default function Assignments() {
                   <br />
                   <small className="text-muted">
                     <span className="text-danger">Multiple Modules</span> |{" "}
-                    <strong>Not available until</strong> May 6 at 12:00am |
+                    <strong>Not available until</strong>{" "}
+                    {formatDate(assignment.availableFrom)} |
                   </small>
                   <br />
                   <small className="text-muted">
-                    <strong>Due</strong> May 13 at 11:59pm | 100 pts
+                    <strong>Due</strong> {formatDate(assignment.dueDate)} |{" "}
+                    {assignment.points} pts
                   </small>
                 </div>
               </div>
