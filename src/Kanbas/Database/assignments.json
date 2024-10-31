@@ -7,6 +7,7 @@
     "points": 100,
     "dueDate": "2024-05-13",
     "availableFrom": "2024-05-01",
+    "availableUntil": "2024-05-14",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -19,6 +20,7 @@
     "points": 80,
     "dueDate": "2024-05-20",
     "availableFrom": "2024-05-05",
+    "availableUntil": "2024-05-21",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -31,6 +33,7 @@
     "points": 90,
     "dueDate": "2024-06-01",
     "availableFrom": "2024-05-10",
+    "availableUntil": "2024-06-02",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -43,6 +46,7 @@
     "points": 50,
     "dueDate": "2024-05-22",
     "availableFrom": "2024-05-15",
+    "availableUntil": "2024-05-23",
     "assignmentGroup": "Quizzes",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -55,6 +59,7 @@
     "points": 75,
     "dueDate": "2024-05-30",
     "availableFrom": "2024-05-18",
+    "availableUntil": "2024-05-31",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -67,6 +72,7 @@
     "points": 70,
     "dueDate": "2024-06-05",
     "availableFrom": "2024-05-25",
+    "availableUntil": "2024-06-06",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -79,6 +85,7 @@
     "points": 85,
     "dueDate": "2024-06-10",
     "availableFrom": "2024-05-28",
+    "availableUntil": "2024-06-11",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "File Upload"]
@@ -91,6 +98,7 @@
     "points": 95,
     "dueDate": "2024-06-15",
     "availableFrom": "2024-06-01",
+    "availableUntil": "2024-06-16",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Website URL", "File Upload"]
@@ -103,6 +111,7 @@
     "points": 100,
     "dueDate": "2024-06-20",
     "availableFrom": "2024-06-10",
+    "availableUntil": "2024-06-21",
     "assignmentGroup": "Exams",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -115,6 +124,7 @@
     "points": 80,
     "dueDate": "2024-05-20",
     "availableFrom": "2024-05-01",
+    "availableUntil": "2024-05-21",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -127,6 +137,7 @@
     "points": 50,
     "dueDate": "2024-05-27",
     "availableFrom": "2024-05-10",
+    "availableUntil": "2024-05-28",
     "assignmentGroup": "Quizzes",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry"]
@@ -139,6 +150,7 @@
     "points": 90,
     "dueDate": "2024-06-05",
     "availableFrom": "2024-05-20",
+    "availableUntil": "2024-06-06",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -151,6 +163,7 @@
     "points": 85,
     "dueDate": "2024-05-18",
     "availableFrom": "2024-05-05",
+    "availableUntil": "2024-05-19",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "File Upload"]
@@ -163,6 +176,7 @@
     "points": 70,
     "dueDate": "2024-05-25",
     "availableFrom": "2024-05-15",
+    "availableUntil": "2024-05-26",
     "assignmentGroup": "Quizzes",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -175,6 +189,7 @@
     "points": 95,
     "dueDate": "2024-06-10",
     "availableFrom": "2024-05-25",
+    "availableUntil": "2024-06-11",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -187,6 +202,7 @@
     "points": 60,
     "dueDate": "2024-05-22",
     "availableFrom": "2024-05-12",
+    "availableUntil": "2024-05-23",
     "assignmentGroup": "Quizzes",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -199,6 +215,7 @@
     "points": 85,
     "dueDate": "2024-06-02",
     "availableFrom": "2024-05-20",
+    "availableUntil": "2024-06-03",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "File Upload"]
@@ -211,6 +228,7 @@
     "points": 95,
     "dueDate": "2024-06-15",
     "availableFrom": "2024-06-01",
+    "availableUntil": "2024-06-16",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -223,6 +241,7 @@
     "points": 80,
     "dueDate": "2024-05-20",
     "availableFrom": "2024-05-01",
+    "availableUntil": "2024-05-21",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "File Upload"]
@@ -235,6 +254,7 @@
     "points": 60,
     "dueDate": "2024-05-28",
     "availableFrom": "2024-05-12",
+    "availableUntil": "2024-05-29",
     "assignmentGroup": "Quizzes",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -247,6 +267,7 @@
     "points": 95,
     "dueDate": "2024-06-10",
     "availableFrom": "2024-05-28",
+    "availableUntil": "2024-06-11",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]
@@ -259,6 +280,7 @@
     "points": 90,
     "dueDate": "2024-05-30",
     "availableFrom": "2024-05-15",
+    "availableUntil": "2024-05-31",
     "assignmentGroup": "Assignments",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL"]
@@ -271,6 +293,7 @@
     "points": 50,
     "dueDate": "2024-06-05",
     "availableFrom": "2024-05-20",
+    "availableUntil": "2024-06-06",
     "assignmentGroup": "Quizzes",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry"]
@@ -283,6 +306,7 @@
     "points": 100,
     "dueDate": "2024-06-15",
     "availableFrom": "2024-06-01",
+    "availableUntil": "2024-06-16",
     "assignmentGroup": "Projects",
     "submissionType": "Online",
     "onlineEntryOptions": ["Text Entry", "Website URL", "File Upload"]

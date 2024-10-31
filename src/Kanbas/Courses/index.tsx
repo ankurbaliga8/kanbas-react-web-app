@@ -3,8 +3,8 @@ import CoursesNavigation from "./Navigation";
 import Modules from "./Modules";
 import Home from "./Home";
 import { Navigate, Route, Routes, useParams, useLocation } from "react-router";
-import Assignments from "./Assignment";
-import AssignmentEditor from "./Assignment/Editor";
+import Assignments from "./Assignments";
+import AssignmentEditor from "./Assignments/Editor";
 import PeopleTable from "./People/Table";
 import { FaAlignJustify } from "react-icons/fa6";
 

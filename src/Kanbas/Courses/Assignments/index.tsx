@@ -1,6 +1,8 @@
 import React from "react";
-import { useParams, Link } from "react-router-dom";
-import { FaCheckCircle, FaSearch } from "react-icons/fa";
+import { useSelector } from "react-redux";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import { FaMagnifyingGlass } from "react-icons/fa6";
+import { FaCheckCircle } from "react-icons/fa";
 import {
   BsPencilSquare,
   BsGripVertical,
@@ -8,21 +10,21 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { RxTriangleDown } from "react-icons/rx";
-import { FaMagnifyingGlass } from "react-icons/fa6";
-
-import * as db from "../../Database";
 
 export default function Assignments() {
   const { cid } = useParams();
-  const assignments = db.assignments;
+  const navigate = useNavigate();
+
+  const assignments = useSelector(
+    (state: any) => state.assignmentsReducer.assignments
+  );
 
   const filteredAssignments = assignments.filter(
-    (assignment) => assignment.course === cid
+    (assignment: any) => assignment.course === cid
   );
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-
     const year = date.getUTCFullYear();
     const month = date.toLocaleString("default", {
       month: "long",
@@ -46,10 +48,14 @@ export default function Assignments() {
             className="form-control border-start-0"
           />
         </div>
-
         <div className="d-flex gap-2">
           <button className="btn btn-sm btn-light border">+ Group</button>
-          <button className="btn btn-sm btn-danger">+ Assignment</button>
+          <button
+            className="btn btn-sm btn-danger"
+            onClick={() => navigate(`/Kanbas/Courses/${cid}/Assignments/new`)}
+          >
+            + Assignment
+          </button>
         </div>
       </div>
 
@@ -70,7 +76,7 @@ export default function Assignments() {
         </div>
 
         <ul id="wd-assignment-list" className="list-group">
-          {filteredAssignments.map((assignment) => (
+          {filteredAssignments.map((assignment: any) => (
             <li
               key={assignment._id}
               className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
@@ -99,7 +105,6 @@ export default function Assignments() {
                   </small>
                 </div>
               </div>
-
               <div className="d-flex align-items-center">
                 <FaCheckCircle className="text-success me-3" />
                 <BsThreeDotsVertical className="text-muted" />
