@@ -20,6 +20,10 @@ export default function Assignments() {
   const assignments = useSelector(
     (state: any) => state.assignmentsReducer.assignments
   );
+  const currentUser = useSelector(
+    (state: any) => state.accountReducer.currentUser
+  );
+  const isFaculty = currentUser?.role === "FACULTY";
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<
@@ -73,15 +77,17 @@ export default function Assignments() {
             className="form-control border-start-0"
           />
         </div>
-        <div className="d-flex gap-2">
-          <button className="btn btn-sm btn-light border">+ Group</button>
-          <button
-            className="btn btn-sm btn-danger"
-            onClick={() => navigate(`/Kanbas/Courses/${cid}/Assignments/new`)}
-          >
-            + Assignment
-          </button>
-        </div>
+        {isFaculty && (
+          <div className="d-flex gap-2">
+            <button className="btn btn-sm btn-light border">+ Group</button>
+            <button
+              className="btn btn-sm btn-danger"
+              onClick={() => navigate(`/Kanbas/Courses/${cid}/Assignments/new`)}
+            >
+              + Assignment
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="wd-module list-group-item p-0 mb-5 fs-5 border-gray">
@@ -130,13 +136,15 @@ export default function Assignments() {
                   </small>
                 </div>
               </div>
-              <div className="d-flex align-items-center">
-                <FaCheckCircle className="text-success me-3" />
-                <FaTrashAlt
-                  className="text-muted cursor-pointer"
-                  onClick={() => handleDeleteClick(assignment._id)}
-                />
-              </div>
+              {isFaculty && (
+                <div className="d-flex align-items-center">
+                  <FaCheckCircle className="text-success me-3" />
+                  <FaTrashAlt
+                    className="text-muted cursor-pointer"
+                    onClick={() => handleDeleteClick(assignment._id)}
+                  />
+                </div>
+              )}
             </li>
           ))}
         </ul>

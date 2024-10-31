@@ -22,6 +22,11 @@ export default function AssignmentEditor() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const currentUser = useSelector(
+    (state: any) => state.accountReducer.currentUser
+  );
+  const isFaculty = currentUser?.role === "FACULTY";
+
   const assignmentToEdit = useSelector((state: any) =>
     state.assignmentsReducer.assignments.find(
       (assignment: any) => assignment._id === aid && assignment.course === cid
@@ -39,7 +44,7 @@ export default function AssignmentEditor() {
     availableUntil: "",
     assignmentGroup: "Assignments",
     submissionType: "Online",
-    onlineEntryOptions: [], // Ensure this is typed as string[]
+    onlineEntryOptions: [],
   });
 
   useEffect(() => {
@@ -58,6 +63,11 @@ export default function AssignmentEditor() {
   };
 
   const handleSave = () => {
+    if (!isFaculty) {
+      alert("You are not authorized to add or edit assignments.");
+      return;
+    }
+
     if (aid === "new") {
       dispatch(
         addAssignment({ ...assignment, _id: new Date().getTime().toString() })
@@ -67,6 +77,10 @@ export default function AssignmentEditor() {
     }
     navigate(`/Kanbas/Courses/${cid}/Assignments`);
   };
+
+  if (!isFaculty) {
+    return <div>You are not authorized to access this page.</div>;
+  }
 
   return (
     <div id="wd-assignments-editor" className="p-4">
