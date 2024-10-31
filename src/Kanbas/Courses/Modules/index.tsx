@@ -14,7 +14,6 @@ export default function Modules() {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
   const dispatch = useDispatch();
 
-  // Check if the current user has the FACULTY role
   const isFaculty = currentUser?.role === "FACULTY";
 
   return (
