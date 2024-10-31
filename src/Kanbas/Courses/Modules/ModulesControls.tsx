@@ -1,8 +1,17 @@
 import { FaPlus } from "react-icons/fa";
 import { RiProhibitedLine } from "react-icons/ri";
 import GreenCheckmark from "./GreenCheckmark";
+import ModuleEditor from "./ModuleEditor";
 
-export default function ModulesControls() {
+export default function ModulesControls({
+  moduleName,
+  setModuleName,
+  addModule,
+}: {
+  moduleName: string;
+  setModuleName: (title: string) => void;
+  addModule: () => void;
+}) {
   return (
     <div
       id="wd-modules-controls"
@@ -71,10 +80,18 @@ export default function ModulesControls() {
       <button
         id="wd-add-module-btn"
         className="btn btn-sm btn-danger d-flex align-items-center"
+        data-bs-toggle="modal"
+        data-bs-target="#wd-add-module-dialog"
       >
         <FaPlus className="me-2" />
         Module
       </button>
+      <ModuleEditor
+        dialogTitle="Add Module"
+        moduleName={moduleName}
+        setModuleName={setModuleName}
+        addModule={addModule}
+      />
     </div>
   );
 }
