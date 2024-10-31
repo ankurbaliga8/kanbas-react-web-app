@@ -22,13 +22,16 @@ export default function Dashboard({
   const { enrollments } = db;
   const isFaculty = currentUser?.role === "FACULTY";
 
-  // Filter to only show courses the user is enrolled in
-  const enrolledCourses = courses.filter((course) =>
-    enrollments.some(
-      (enrollment) =>
-        enrollment.user === currentUser._id && enrollment.course === course._id
-    )
-  );
+  // Determine the courses to display based on user role
+  const displayedCourses = isFaculty
+    ? courses // Show all courses for faculty
+    : courses.filter((course) =>
+        enrollments.some(
+          (enrollment) =>
+            enrollment.user === currentUser._id &&
+            enrollment.course === course._id
+        )
+      ); // Show only enrolled courses for students
 
   return (
     <div id="wd-dashboard" className="p-4">
@@ -70,12 +73,13 @@ export default function Dashboard({
         </>
       )}
       <h2 id="wd-dashboard-published">
-        Published Courses ({enrolledCourses.length})
+        {isFaculty ? "All Courses" : "Published Courses"} (
+        {displayedCourses.length})
       </h2>
       <hr />
       <div id="wd-dashboard-courses" className="row">
         <div className="row row-cols-1 row-cols-md-5 g-4">
-          {enrolledCourses.map((course) => (
+          {displayedCourses.map((course) => (
             <div key={course._id} className="col" style={{ maxWidth: "300px" }}>
               <div className="card rounded-3 overflow-hidden">
                 <Link
@@ -83,7 +87,10 @@ export default function Dashboard({
                   className="text-decoration-none text-dark"
                 >
                   <img
-                    src={course.image}
+                    src={
+                      course.image ||
+                      process.env.PUBLIC_URL + "/images/reactjs.jpeg"
+                    } // Default to reactjs.jpeg if no image
                     alt={course.name}
                     width="100%"
                     height={160}

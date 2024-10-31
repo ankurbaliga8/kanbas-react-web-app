@@ -1,8 +1,8 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { FaMagnifyingGlass } from "react-icons/fa6";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaTrashAlt } from "react-icons/fa";
 import {
   BsPencilSquare,
   BsGripVertical,
@@ -10,14 +10,21 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { RxTriangleDown } from "react-icons/rx";
+import { deleteAssignment } from "./reducer"; // Ensure delete action is imported
 
 export default function Assignments() {
   const { cid } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const assignments = useSelector(
     (state: any) => state.assignmentsReducer.assignments
   );
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<
+    string | null
+  >(null);
 
   const filteredAssignments = assignments.filter(
     (assignment: any) => assignment.course === cid
@@ -32,6 +39,24 @@ export default function Assignments() {
     });
     const day = date.getUTCDate();
     return `${month} ${day}, ${year}`;
+  };
+
+  const handleDeleteClick = (assignmentId: string) => {
+    setSelectedAssignmentId(assignmentId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (selectedAssignmentId) {
+      dispatch(deleteAssignment(selectedAssignmentId));
+      setSelectedAssignmentId(null);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setSelectedAssignmentId(null);
+    setShowDeleteDialog(false);
   };
 
   return (
@@ -107,12 +132,44 @@ export default function Assignments() {
               </div>
               <div className="d-flex align-items-center">
                 <FaCheckCircle className="text-success me-3" />
-                <BsThreeDotsVertical className="text-muted" />
+                <FaTrashAlt
+                  className="text-muted cursor-pointer"
+                  onClick={() => handleDeleteClick(assignment._id)}
+                />
               </div>
             </li>
           ))}
         </ul>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="modal" style={{ display: "block" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Delete Assignment</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={cancelDelete}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this assignment?</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={cancelDelete}>
+                  Cancel
+                </button>
+                <button className="btn btn-danger" onClick={confirmDelete}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
