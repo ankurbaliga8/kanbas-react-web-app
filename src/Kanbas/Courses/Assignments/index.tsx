@@ -10,7 +10,7 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { RxTriangleDown } from "react-icons/rx";
-import { deleteAssignment } from "./reducer"; // Ensure delete action is imported
+import { deleteAssignment } from "./reducer";
 
 export default function Assignments() {
   const { cid } = useParams();
@@ -150,7 +150,6 @@ export default function Assignments() {
         </ul>
       </div>
 
-      {/* Confirmation Dialog */}
       {showDeleteDialog && (
         <div className="modal" style={{ display: "block" }}>
           <div className="modal-dialog">

@@ -47,6 +47,8 @@ export default function AssignmentEditor() {
     onlineEntryOptions: [],
   });
 
+  const availableEntryOptions = ["Text Entry", "Website URL", "File Upload"];
+
   useEffect(() => {
     if (assignmentToEdit) {
       setAssignment(assignmentToEdit);
@@ -60,6 +62,15 @@ export default function AssignmentEditor() {
   ) => {
     const { name, value } = e.target;
     setAssignment((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const toggleEntryOption = (option: string) => {
+    setAssignment((prev) => {
+      const updatedOptions = prev.onlineEntryOptions.includes(option)
+        ? prev.onlineEntryOptions.filter((opt) => opt !== option)
+        : [...prev.onlineEntryOptions, option];
+      return { ...prev, onlineEntryOptions: updatedOptions };
+    });
   };
 
   const handleSave = () => {
@@ -79,66 +90,83 @@ export default function AssignmentEditor() {
   };
 
   if (!isFaculty) {
-    return <div>You are not authorized to access this page.</div>;
+    return (
+      <div className="p-4">
+        <h2>Access Denied</h2>
+        <p>You are not authorized to view this page.</p>
+      </div>
+    );
   }
 
   return (
     <div id="wd-assignments-editor" className="p-4">
       <div className="mb-4">
-        <label htmlFor="title" className="form-label mb-1">
+        <label htmlFor="wd-name" className="form-label mb-1">
           Assignment Name
         </label>
         <input
-          id="title"
+          id="wd-name"
           name="title"
           value={assignment.title}
           onChange={handleChange}
           className="form-control"
           style={{ width: "100%" }}
+          readOnly={!isFaculty}
         />
       </div>
 
       <div className="mb-4">
-        <label htmlFor="description" className="form-label mb-1">
+        <label htmlFor="wd-description" className="form-label mb-1">
           Description
         </label>
-        <textarea
-          id="description"
-          name="description"
-          value={assignment.description}
-          onChange={handleChange}
-          className="form-control bg-light border rounded"
-          style={{ width: "100%" }}
-        />
+        {isFaculty ? (
+          <textarea
+            id="wd-description"
+            name="description"
+            value={assignment.description}
+            onChange={handleChange}
+            className="form-control bg-light border rounded"
+            style={{ width: "100%" }}
+          />
+        ) : (
+          <div
+            className="p-3 bg-light border rounded"
+            style={{ width: "100%" }}
+          >
+            <p>{assignment.description || "No description available"}</p>
+          </div>
+        )}
       </div>
 
       <div className="mb-4 row ms-5">
-        <label htmlFor="points" className="col-sm-3 col-form-label">
+        <label htmlFor="wd-points" className="col-sm-3 col-form-label">
           Points
         </label>
         <div className="col-sm-9">
           <input
-            id="points"
+            id="wd-points"
             type="number"
             name="points"
             value={assignment.points}
             onChange={handleChange}
             className="form-control mb-3"
             style={{ width: "100%" }}
+            readOnly={!isFaculty}
           />
         </div>
 
-        <label htmlFor="assignmentGroup" className="col-sm-3 col-form-label">
+        <label htmlFor="wd-group" className="col-sm-3 col-form-label">
           Assignment Group
         </label>
         <div className="col-sm-9">
           <select
-            id="assignmentGroup"
+            id="wd-group"
             name="assignmentGroup"
             className="form-select mb-3"
             style={{ width: "100%" }}
             value={assignment.assignmentGroup}
             onChange={handleChange}
+            disabled={!isFaculty}
           >
             <option value="Assignments">Assignments</option>
             <option value="Quizzes">Quizzes</option>
@@ -146,92 +174,101 @@ export default function AssignmentEditor() {
             <option value="Projects">Projects</option>
           </select>
         </div>
+      </div>
 
-        <label htmlFor="submissionType" className="col-sm-3 col-form-label">
+      <div className="mb-4 row ms-5">
+        <label htmlFor="wd-submission-type" className="col-sm-3 col-form-label">
           Submission Type
         </label>
         <div className="col-sm-9 border p-3 rounded">
           <select
-            id="submissionType"
+            id="wd-submission-type"
             name="submissionType"
             className="form-select mb-3"
             style={{ width: "100%" }}
             value={assignment.submissionType}
             onChange={handleChange}
+            disabled={!isFaculty}
           >
             <option value="Online">Online</option>
           </select>
+
+          <div className="form-group">
+            <label className="form-label">Online Entry Options</label>
+            {availableEntryOptions.map((option) => (
+              <div className="form-check" key={option}>
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  checked={assignment.onlineEntryOptions.includes(option)}
+                  onChange={() => toggleEntryOption(option)}
+                  disabled={!isFaculty}
+                />
+                <label className="form-check-label">{option}</label>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="mb-4 row ms-5">
-        <label htmlFor="dueDate" className="col-sm-3 col-form-label">
-          Due Date
+        <label htmlFor="wd-assign" className="col-sm-3 col-form-label">
+          Assign
         </label>
-        <div className="col-sm-9">
+        <div className="col-sm-9 border p-3 rounded">
+          <label htmlFor="wd-assign-to" className="form-label">
+            Assign To
+          </label>
           <input
-            id="dueDate"
+            id="wd-assign-to"
+            value="Everyone"
+            className="form-control mb-2"
+            readOnly
+          />
+
+          <label htmlFor="wd-due-date" className="form-label">
+            Due
+          </label>
+          <input
+            id="wd-due-date"
             type="date"
             name="dueDate"
             value={assignment.dueDate}
             onChange={handleChange}
-            className="form-control mb-3"
-            style={{ width: "100%" }}
+            className="form-control mb-2"
+            readOnly={!isFaculty}
           />
-        </div>
 
-        <label htmlFor="availableFrom" className="col-sm-3 col-form-label">
-          Available From
-        </label>
-        <div className="col-sm-9">
-          <input
-            id="availableFrom"
-            type="date"
-            name="availableFrom"
-            value={assignment.availableFrom}
-            onChange={handleChange}
-            className="form-control mb-3"
-            style={{ width: "100%" }}
-          />
-        </div>
-
-        <label htmlFor="availableUntil" className="col-sm-3 col-form-label">
-          Available Until
-        </label>
-        <div className="col-sm-9">
-          <input
-            id="availableUntil"
-            type="date"
-            name="availableUntil"
-            value={assignment.availableUntil}
-            onChange={handleChange}
-            className="form-control mb-3"
-            style={{ width: "100%" }}
-          />
-        </div>
-      </div>
-
-      <div className="mb-4 row ms-5">
-        <label className="col-sm-3 col-form-label">Online Entry Options</label>
-        <div className="col-sm-9">
-          {["Text Entry", "Website URL", "File Upload"].map((option) => (
-            <div className="form-check" key={option}>
+          <div className="row">
+            <div className="col-md-6">
+              <label htmlFor="wd-available-from" className="form-label">
+                Available From
+              </label>
               <input
-                type="checkbox"
-                className="form-check-input"
-                checked={assignment.onlineEntryOptions.includes(option)}
-                onChange={() =>
-                  setAssignment((prev) => ({
-                    ...prev,
-                    onlineEntryOptions: prev.onlineEntryOptions.includes(option)
-                      ? prev.onlineEntryOptions.filter((opt) => opt !== option)
-                      : [...prev.onlineEntryOptions, option],
-                  }))
-                }
+                id="wd-available-from"
+                type="date"
+                name="availableFrom"
+                value={assignment.availableFrom}
+                onChange={handleChange}
+                className="form-control"
+                readOnly={!isFaculty}
               />
-              <label className="form-check-label">{option}</label>
             </div>
-          ))}
+            <div className="col-md-6">
+              <label htmlFor="wd-available-to" className="form-label">
+                Until
+              </label>
+              <input
+                id="wd-available-to"
+                type="date"
+                name="availableUntil"
+                value={assignment.availableUntil}
+                onChange={handleChange}
+                className="form-control"
+                readOnly={!isFaculty}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -244,9 +281,11 @@ export default function AssignmentEditor() {
         >
           Cancel
         </Link>
-        <button onClick={handleSave} className="btn btn-danger">
-          Save
-        </button>
+        {isFaculty && (
+          <button onClick={handleSave} className="btn btn-danger">
+            Save
+          </button>
+        )}
       </div>
     </div>
   );
