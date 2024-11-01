@@ -22,16 +22,15 @@ export default function Dashboard({
   const { enrollments } = db;
   const isFaculty = currentUser?.role === "FACULTY";
 
-  // Determine the courses to display based on user role
   const displayedCourses = isFaculty
-    ? courses // Show all courses for faculty
+    ? courses
     : courses.filter((course) =>
         enrollments.some(
           (enrollment) =>
             enrollment.user === currentUser._id &&
             enrollment.course === course._id
         )
-      ); // Show only enrolled courses for students
+      );
 
   return (
     <div id="wd-dashboard" className="p-4">
@@ -90,7 +89,7 @@ export default function Dashboard({
                     src={
                       course.image ||
                       process.env.PUBLIC_URL + "/images/reactjs.jpeg"
-                    } // Default to reactjs.jpeg if no image
+                    }
                     alt={course.name}
                     width="100%"
                     height={160}

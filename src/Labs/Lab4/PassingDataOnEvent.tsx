@@ -7,7 +7,7 @@ export default function PassingDataOnEvent() {
     <div id="wd-passing-data-on-event">
       <h2>Passing Data on Event</h2>
       <button
-        onClick={() => add(2, 3)} // Correct syntax to call add with parameters
+        onClick={() => add(2, 3)}
         className="btn btn-primary"
         id="wd-pass-data-click"
       >
