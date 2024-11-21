@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { addAssignment, updateAssignment } from "./reducer";
+import { createAssignmentForCourse, updateAssignmentAPI } from "./client";
 
 interface AssignmentState {
   _id: string;
@@ -18,7 +19,7 @@ interface AssignmentState {
 }
 
 export default function AssignmentEditor() {
-  const { cid, aid } = useParams();
+  const { cid, aid } = useParams<{ cid: string; aid: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -73,20 +74,33 @@ export default function AssignmentEditor() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isFaculty) {
-      alert("You are not authorized to add or edit assignments.");
+      alert("Unauthorized to add or edit assignments.");
       return;
     }
 
-    if (aid === "new") {
-      dispatch(
-        addAssignment({ ...assignment, _id: new Date().getTime().toString() })
-      );
-    } else {
-      dispatch(updateAssignment(assignment));
+    if (!cid) {
+      alert("Course ID is required.");
+      console.error("Course ID is missing.");
+      return;
     }
-    navigate(`/Kanbas/Courses/${cid}/Assignments`);
+
+    try {
+      if (aid === "new") {
+        // Add a new assignment
+        const newAssignment = await createAssignmentForCourse(cid, assignment);
+        dispatch(addAssignment(newAssignment));
+      } else {
+        // Update an existing assignment
+        const updatedAssignment = await updateAssignmentAPI(assignment);
+        dispatch(updateAssignment(updatedAssignment));
+      }
+      navigate(`/Kanbas/Courses/${cid}/Assignments`);
+    } catch (error) {
+      console.error("Error saving assignment:", error);
+      alert("Failed to save assignment. Please try again.");
+    }
   };
 
   if (!isFaculty) {
@@ -111,7 +125,6 @@ export default function AssignmentEditor() {
           onChange={handleChange}
           className="form-control"
           style={{ width: "100%" }}
-          readOnly={!isFaculty}
         />
       </div>
 
@@ -119,23 +132,14 @@ export default function AssignmentEditor() {
         <label htmlFor="wd-description" className="form-label mb-1">
           Description
         </label>
-        {isFaculty ? (
-          <textarea
-            id="wd-description"
-            name="description"
-            value={assignment.description}
-            onChange={handleChange}
-            className="form-control bg-light border rounded"
-            style={{ width: "100%" }}
-          />
-        ) : (
-          <div
-            className="p-3 bg-light border rounded"
-            style={{ width: "100%" }}
-          >
-            <p>{assignment.description || "No description available"}</p>
-          </div>
-        )}
+        <textarea
+          id="wd-description"
+          name="description"
+          value={assignment.description}
+          onChange={handleChange}
+          className="form-control bg-light border rounded"
+          style={{ width: "100%" }}
+        />
       </div>
 
       <div className="mb-4 row ms-5">
@@ -151,7 +155,6 @@ export default function AssignmentEditor() {
             onChange={handleChange}
             className="form-control mb-3"
             style={{ width: "100%" }}
-            readOnly={!isFaculty}
           />
         </div>
 
@@ -166,7 +169,6 @@ export default function AssignmentEditor() {
             style={{ width: "100%" }}
             value={assignment.assignmentGroup}
             onChange={handleChange}
-            disabled={!isFaculty}
           >
             <option value="Assignments">Assignments</option>
             <option value="Quizzes">Quizzes</option>
@@ -188,7 +190,6 @@ export default function AssignmentEditor() {
             style={{ width: "100%" }}
             value={assignment.submissionType}
             onChange={handleChange}
-            disabled={!isFaculty}
           >
             <option value="Online">Online</option>
           </select>
@@ -202,7 +203,6 @@ export default function AssignmentEditor() {
                   className="form-check-input"
                   checked={assignment.onlineEntryOptions.includes(option)}
                   onChange={() => toggleEntryOption(option)}
-                  disabled={!isFaculty}
                 />
                 <label className="form-check-label">{option}</label>
               </div>
@@ -236,7 +236,6 @@ export default function AssignmentEditor() {
             value={assignment.dueDate}
             onChange={handleChange}
             className="form-control mb-2"
-            readOnly={!isFaculty}
           />
 
           <div className="row">
@@ -251,7 +250,6 @@ export default function AssignmentEditor() {
                 value={assignment.availableFrom}
                 onChange={handleChange}
                 className="form-control"
-                readOnly={!isFaculty}
               />
             </div>
             <div className="col-md-6">
@@ -265,7 +263,6 @@ export default function AssignmentEditor() {
                 value={assignment.availableUntil}
                 onChange={handleChange}
                 className="form-control"
-                readOnly={!isFaculty}
               />
             </div>
           </div>
@@ -281,11 +278,9 @@ export default function AssignmentEditor() {
         >
           Cancel
         </Link>
-        {isFaculty && (
-          <button onClick={handleSave} className="btn btn-danger">
-            Save
-          </button>
-        )}
+        <button onClick={handleSave} className="btn btn-danger">
+          Save
+        </button>
       </div>
     </div>
   );

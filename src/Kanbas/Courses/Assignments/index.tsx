@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { FaMagnifyingGlass } from "react-icons/fa6";
@@ -10,10 +10,11 @@ import {
   BsPlus,
 } from "react-icons/bs";
 import { RxTriangleDown } from "react-icons/rx";
-import { deleteAssignment } from "./reducer";
+import { deleteAssignment, setAssignments } from "./reducer";
+import { findAssignmentsForCourse, deleteAssignmentAPI } from "./client";
 
 export default function Assignments() {
-  const { cid } = useParams();
+  const { cid } = useParams<{ cid: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -25,17 +26,41 @@ export default function Assignments() {
   );
   const isFaculty = currentUser?.role === "FACULTY";
 
+  const [searchTerm, setSearchTerm] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<
     string | null
   >(null);
+  const [loading, setLoading] = useState(true);
 
-  const filteredAssignments = assignments.filter(
-    (assignment: any) => assignment.course === cid
+  // Fetch assignments for the selected course
+  useEffect(() => {
+    const fetchAssignments = async () => {
+      if (!cid) return;
+      try {
+        const courseAssignments = await findAssignmentsForCourse(cid);
+        dispatch(setAssignments(courseAssignments));
+      } catch (error) {
+        console.error("Error fetching assignments:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAssignments();
+  }, [cid, dispatch]);
+
+  // Filter assignments by course and search term
+  const filteredAssignments =
+    assignments?.filter((assignment: any) => assignment.course === cid) || [];
+
+  const searchedAssignments = filteredAssignments.filter((assignment: any) =>
+    assignment.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return "No Date";
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return "Invalid Date";
     const year = date.getUTCFullYear();
     const month = date.toLocaleString("default", {
       month: "long",
@@ -50,11 +75,17 @@ export default function Assignments() {
     setShowDeleteDialog(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (selectedAssignmentId) {
-      dispatch(deleteAssignment(selectedAssignmentId));
-      setSelectedAssignmentId(null);
-      setShowDeleteDialog(false);
+      try {
+        await deleteAssignmentAPI(selectedAssignmentId);
+        dispatch(deleteAssignment(selectedAssignmentId));
+      } catch (error) {
+        console.error("Error deleting assignment:", error);
+      } finally {
+        setSelectedAssignmentId(null);
+        setShowDeleteDialog(false);
+      }
     }
   };
 
@@ -62,6 +93,18 @@ export default function Assignments() {
     setSelectedAssignmentId(null);
     setShowDeleteDialog(false);
   };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleEditClick = (assignmentId: string) => {
+    navigate(`/Kanbas/Courses/${cid}/Assignments/${assignmentId}/edit`);
+  };
+
+  if (loading) {
+    return <div className="text-center p-3">Loading assignments...</div>;
+  }
 
   return (
     <div id="wd-assignments" className="p-3">
@@ -75,6 +118,8 @@ export default function Assignments() {
             type="text"
             placeholder="Search for Assignments..."
             className="form-control border-start-0"
+            value={searchTerm}
+            onChange={handleSearchChange}
           />
         </div>
         {isFaculty && (
@@ -99,7 +144,7 @@ export default function Assignments() {
           </div>
           <div className="d-flex align-items-center">
             <span className="badge rounded-pill border border-dark text-muted px-3 py-1">
-              40% of Total
+              {filteredAssignments.length} Total
             </span>
             <BsPlus className="me-3 fs-4 text-muted" />
             <BsThreeDotsVertical className="text-muted" />
@@ -107,7 +152,7 @@ export default function Assignments() {
         </div>
 
         <ul id="wd-assignment-list" className="list-group">
-          {filteredAssignments.map((assignment: any) => (
+          {searchedAssignments.map((assignment: any) => (
             <li
               key={assignment._id}
               className="wd-assignment-list-item list-group-item d-flex justify-content-between align-items-center"
@@ -115,7 +160,10 @@ export default function Assignments() {
             >
               <div className="d-flex align-items-center">
                 <BsGripVertical className="me-3 fs-5 text-muted" />
-                <BsPencilSquare className="me-2 fs-5 text-muted" />
+                <BsPencilSquare
+                  className="me-2 fs-5 text-muted cursor-pointer"
+                  onClick={() => handleEditClick(assignment._id)}
+                />
                 <div>
                   <Link
                     to={`/Kanbas/Courses/${cid}/Assignments/${assignment._id}`}
@@ -148,6 +196,11 @@ export default function Assignments() {
             </li>
           ))}
         </ul>
+        {searchedAssignments.length === 0 && (
+          <div className="text-muted text-center mt-3">
+            No assignments found.
+          </div>
+        )}
       </div>
 
       {showDeleteDialog && (
