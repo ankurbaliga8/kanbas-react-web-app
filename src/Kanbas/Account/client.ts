@@ -43,3 +43,29 @@ export const createCourse = async (course: any) => {
   );
   return data;
 };
+
+export const getEnrollments = async (userId: string) => {
+  const response = await axiosWithCredentials.get(
+    `${USERS_API}/${userId}/enrollments`
+  );
+  return response.data;
+};
+
+export const enrollInCourse = async (userId: string, courseId: string) => {
+  const response = await axiosWithCredentials.post(
+    `${USERS_API}/${userId}/enrollments/${courseId}`
+  );
+  return response.data;
+};
+
+export const unenrollFromCourse = async (userId: string, courseId: string) => {
+  const response = await axiosWithCredentials.delete(
+    `${USERS_API}/${userId}/enrollments/${courseId}`
+  );
+  return response.data;
+};
+
+export const findAllCourses = async () => {
+  const response = await axios.get(`${REMOTE_SERVER}/api/courses`);
+  return response.data;
+};

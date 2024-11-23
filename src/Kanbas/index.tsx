@@ -21,6 +21,7 @@ export default function Kanbas() {
     description: "",
   });
   const { currentUser } = useSelector((state: any) => state.accountReducer);
+  const isFaculty = currentUser?.role === "FACULTY";
 
   const resetCourse = () => {
     setCourse({
@@ -33,7 +34,7 @@ export default function Kanbas() {
 
   const fetchCourses = async () => {
     try {
-      const fetchedCourses = await userClient.findMyCourses();
+      const fetchedCourses = await userClient.findAllCourses();
       setCourses(fetchedCourses);
     } catch (error) {
       console.error("Error fetching courses:", error);

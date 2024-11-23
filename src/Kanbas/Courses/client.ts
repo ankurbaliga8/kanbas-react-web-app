@@ -26,3 +26,17 @@ export const findModulesForCourse = async (courseId: string) => {
   const response = await axios.get(`${COURSES_API}/${courseId}/modules`);
   return response.data;
 };
+
+export const enrollInCourse = async (userId: string, courseId: string) => {
+  const response = await axios.post(
+    `${REMOTE_SERVER}/api/users/${userId}/enrollments/${courseId}`
+  );
+  return response.data;
+};
+
+export const unenrollFromCourse = async (userId: string, courseId: string) => {
+  const response = await axios.delete(
+    `${REMOTE_SERVER}/api/users/${userId}/enrollments/${courseId}`
+  );
+  return response.data;
+};
