@@ -49,7 +49,7 @@ export default function Dashboard({
         await client.unenrollFromCourse(currentUser._id, courseId);
         const updatedEnrollments = enrollments.filter((id) => id !== courseId);
         setEnrollments(updatedEnrollments);
-        // Update currentUser's enrollments in Redux store
+
         dispatch({
           type: "UPDATE_USER",
           payload: { ...currentUser, enrollments: updatedEnrollments },
@@ -58,7 +58,7 @@ export default function Dashboard({
         await client.enrollInCourse(currentUser._id, courseId);
         const updatedEnrollments = [...enrollments, courseId];
         setEnrollments(updatedEnrollments);
-        // Update currentUser's enrollments in Redux store
+
         dispatch({
           type: "UPDATE_USER",
           payload: { ...currentUser, enrollments: updatedEnrollments },

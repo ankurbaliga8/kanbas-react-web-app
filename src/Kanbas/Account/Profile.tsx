@@ -36,6 +36,9 @@ export default function Profile() {
   return (
     <div className="wd-profile-screen">
       <h3>Profile</h3>
+      <div>
+        <p>Current Role: {profile.role}</p>
+      </div>
       {profile && (
         <div>
           <input
