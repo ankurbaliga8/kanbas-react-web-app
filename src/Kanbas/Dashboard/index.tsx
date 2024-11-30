@@ -12,6 +12,9 @@ export default function Dashboard({
   addNewCourse,
   deleteCourse,
   updateCourse,
+  enrolling,
+  setEnrolling,
+  updateEnrollment,
 }: {
   courses: any[];
   course: any;
@@ -19,6 +22,9 @@ export default function Dashboard({
   addNewCourse: () => void;
   deleteCourse: (courseId: string) => void;
   updateCourse: () => void;
+  enrolling: boolean;
+  setEnrolling: (enrolling: boolean) => void;
+  updateEnrollment: (courseId: string, enrolled: boolean) => void;
 }) {
   const { currentUser } = useSelector((state: any) => state.accountReducer);
   const isFaculty = currentUser?.role === "FACULTY";
@@ -69,11 +75,11 @@ export default function Dashboard({
     }
   };
 
-  const displayedCourses = isFaculty
-    ? courses
-    : showAllCourses
-    ? courses
-    : courses.filter((c) => enrollments.includes(c._id));
+  const displayedCourses = courses;
+  // ? courses
+  // : showAllCourses
+  // ? courses
+  // : courses.filter((c) => enrollments.includes(c._id));
 
   return (
     <div id="wd-dashboard" className="p-4">
@@ -81,10 +87,10 @@ export default function Dashboard({
         <h1>Dashboard</h1>
         {!isFaculty && (
           <button
-            className="btn btn-primary"
-            onClick={() => setShowAllCourses(!showAllCourses)}
+            onClick={() => setEnrolling(!enrolling)}
+            className="float-end btn btn-primary"
           >
-            {showAllCourses ? "Show My Enrollments" : "Show All Courses"}
+            {enrolling ? "My Courses" : "All Courses"}
           </button>
         )}
       </div>
@@ -188,16 +194,17 @@ export default function Dashboard({
                     Go
                   </Link>
                 )}
-                {!isFaculty && (
+                {!isFaculty && enrolling && (
                   <button
-                    onClick={() => toggleEnrollment(course._id)}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      updateEnrollment(course._id, !course.enrolled);
+                    }}
                     className={`btn ${
-                      enrollments.includes(course._id)
-                        ? "btn-danger"
-                        : "btn-success"
-                    }`}
+                      course.enrolled ? "btn-danger" : "btn-success"
+                    } float-end`}
                   >
-                    {enrollments.includes(course._id) ? "Unenroll" : "Enroll"}
+                    {course.enrolled ? "Unenroll" : "Enroll"}
                   </button>
                 )}
                 {isFaculty && (
