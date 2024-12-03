@@ -38,10 +38,26 @@ export default function Dashboard({
   const fetchEnrollments = memoizedFetchEnrollments;
 
   useEffect(() => {
-    if (currentUser && !isFaculty) {
-      fetchEnrollments();
-    }
-  }, [currentUser, fetchEnrollments, isFaculty]);
+    const loadDashboard = async () => {
+      if (currentUser) {
+        await fetchEnrollments();
+        if (isFaculty) {
+          const createdCourses = courses.filter(
+            (c) => c.creator === currentUser._id
+          );
+          const createdCourseIds = createdCourses.map((c) => c._id);
+          // Add created courses to enrollments if not already there
+          const newEnrollments = Array.from(
+            new Set([...enrollments, ...createdCourseIds])
+          );
+          if (newEnrollments.length !== enrollments.length) {
+            setEnrollments(newEnrollments);
+          }
+        }
+      }
+    };
+    loadDashboard();
+  }, [currentUser, courses, isFaculty, fetchEnrollments, enrollments]);
 
   const toggleEnrollment = async (courseId: string) => {
     try {
@@ -69,11 +85,14 @@ export default function Dashboard({
     }
   };
 
-  const displayedCourses = isFaculty
-    ? courses
-    : showAllCourses
-    ? courses
-    : courses.filter((c) => enrollments.includes(c._id));
+  const displayedCourses = courses.filter((c) => {
+    if (isFaculty) {
+      // Show courses where faculty is either enrolled or is the creator
+      return enrollments.includes(c._id) || c.creator === currentUser._id;
+    }
+    // Student logic remains the same
+    return showAllCourses ? true : enrollments.includes(c._id);
+  });
 
   return (
     <div id="wd-dashboard" className="p-4">
