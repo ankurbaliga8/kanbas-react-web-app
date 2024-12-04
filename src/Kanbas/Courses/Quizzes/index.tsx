@@ -53,7 +53,7 @@ export default function Quizzes() {
   );
 
   const handleAddQuiz = () => {
-    navigate(`/Kanbas/Courses/${cid}/Quizzes/new`);
+    navigate(`/Kanbas/Courses/${cid}/Quizzes/new/edit/details`);
   };
 
   const getAvailabilityStatus = (quiz: any) => {
@@ -147,19 +147,12 @@ export default function Quizzes() {
                 {isFaculty && (
                   <>
                     <BsGripVertical className="me-3 fs-5 text-muted" />
-                    <BsPencilSquare
-                      className="me-2 fs-5 text-muted cursor-pointer"
-                      onClick={() =>
-                        navigate(
-                          `/Kanbas/Courses/${cid}/Quizzes/${quiz._id}/edit`
-                        )
-                      }
-                    />
+                    <BsPencilSquare className="me-2 fs-5 text-muted" />
                   </>
                 )}
                 <div>
                   <Link
-                    to={`/Kanbas/Courses/${cid}/Quizzes/${quiz._id}`}
+                    to={`/Kanbas/Courses/${cid}/Quizzes/${quiz._id}/view`}
                     className="text-dark fw-bold text-decoration-none"
                   >
                     {quiz.title}
@@ -210,7 +203,9 @@ export default function Quizzes() {
                       <button
                         className="btn btn-link text-start w-100 text-decoration-none"
                         onClick={() =>
-                          navigate(`/Kanbas/Courses/${cid}/Quizzes/${quiz._id}`)
+                          navigate(
+                            `/Kanbas/Courses/${cid}/Quizzes/${quiz._id}/edit/details`
+                          )
                         }
                       >
                         Edit

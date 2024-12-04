@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addQuiz, updateQuiz } from "./reducer";
 import { createQuizForCourse, updateQuizAPI } from "./client";
 import Details from "./Details";
 import Questions from "./Questions";
+import { MdDoNotDisturbAlt } from "react-icons/md";
+import { FaCheckCircle } from "react-icons/fa";
 
 interface QuizState {
   _id: string;
@@ -32,6 +34,7 @@ export default function QuizEditor() {
   const { cid, qid } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("details");
 
   const quizToEdit = useSelector((state: any) =>
@@ -68,27 +71,44 @@ export default function QuizEditor() {
     }
   }, [quizToEdit]);
 
+  useEffect(() => {
+    // Set active tab based on URL
+    const path = location.pathname;
+    if (path.includes("/questions")) {
+      setActiveTab("questions");
+    } else {
+      setActiveTab("details");
+    }
+  }, [location]);
+
   const handleSave = async (andPublish: boolean = false) => {
     try {
       console.log("Before update - Quiz state:", quiz);
       console.log("Attempting to publish:", andPublish);
 
+      let savedQuiz;
       if (qid === "new") {
-        const newQuiz = await createQuizForCourse(cid!, {
+        savedQuiz = await createQuizForCourse(cid!, {
           ...quiz,
           published: andPublish,
         });
-        console.log("Created new quiz:", newQuiz);
-        dispatch(addQuiz(newQuiz));
+        console.log("Created new quiz:", savedQuiz);
+        dispatch(addQuiz(savedQuiz));
       } else {
-        const updatedQuiz = await updateQuizAPI(quiz._id, {
+        savedQuiz = await updateQuizAPI(quiz._id, {
           ...quiz,
           published: andPublish,
         });
-        console.log("Updated existing quiz:", updatedQuiz);
-        dispatch(updateQuiz(updatedQuiz));
+        console.log("Updated existing quiz:", savedQuiz);
+        dispatch(updateQuiz(savedQuiz));
       }
-      navigate(`/Kanbas/Courses/${cid}/Quizzes`);
+
+      // Navigate to quiz view page if just saving, otherwise go to quizzes list
+      if (andPublish) {
+        navigate(`/Kanbas/Courses/${cid}/Quizzes`);
+      } else {
+        navigate(`/Kanbas/Courses/${cid}/Quizzes/${savedQuiz._id}/view`);
+      }
     } catch (error) {
       console.error("Error saving quiz:", error);
       alert("Failed to save quiz. Please try again.");
@@ -97,13 +117,31 @@ export default function QuizEditor() {
 
   return (
     <div className="p-4">
-      <h2>{qid === "new" ? "New Quiz" : "Edit Quiz"}</h2>
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2>{qid === "new" ? "New Quiz" : "Edit Quiz"}</h2>
+        <div className="d-flex align-items-center">
+          {quiz.published ? (
+            <div className="d-flex align-items-center text-success">
+              <FaCheckCircle className="me-2" />
+              <span>Published</span>
+            </div>
+          ) : (
+            <div className="d-flex align-items-center text-secondary">
+              <MdDoNotDisturbAlt className="me-2" />
+              <span>Unpublished</span>
+            </div>
+          )}
+        </div>
+      </div>
 
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === "details" ? "active" : ""}`}
-            onClick={() => setActiveTab("details")}
+            onClick={() => {
+              setActiveTab("details");
+              navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/details`);
+            }}
           >
             Details
           </button>
@@ -111,7 +149,10 @@ export default function QuizEditor() {
         <li className="nav-item">
           <button
             className={`nav-link ${activeTab === "questions" ? "active" : ""}`}
-            onClick={() => setActiveTab("questions")}
+            onClick={() => {
+              setActiveTab("questions");
+              navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/questions`);
+            }}
           >
             Questions
           </button>

@@ -51,6 +51,17 @@ export default function Details({ quiz, setQuiz }: any) {
       </div>
 
       <div className="mb-4">
+        <label className="form-label">Points</label>
+        <input
+          type="number"
+          name="points"
+          className="form-control"
+          value={quiz.points}
+          onChange={handleChange}
+        />
+      </div>
+
+      <div className="mb-4">
         <label className="form-label">Assignment Group</label>
         <select
           name="assignmentGroup"
@@ -65,7 +76,6 @@ export default function Details({ quiz, setQuiz }: any) {
         </select>
       </div>
 
-      {/* Options */}
       <div className="mb-4">
         <div className="form-check mb-2">
           <input
@@ -89,10 +99,76 @@ export default function Details({ quiz, setQuiz }: any) {
           />
         </div>
 
-        {/* Add more options following the same pattern */}
+        <div className="form-check mb-2">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            name="multipleAttempts"
+            checked={quiz.multipleAttempts}
+            onChange={handleChange}
+          />
+          <label className="form-check-label">Multiple Attempts</label>
+        </div>
+
+        <div className="form-check mb-2">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            name="showCorrectAnswers"
+            checked={quiz.showCorrectAnswers}
+            onChange={handleChange}
+          />
+          <label className="form-check-label">Show Correct Answers</label>
+        </div>
+
+        <div className="mb-2">
+          <label className="form-label">Access Code</label>
+          <input
+            type="text"
+            className="form-control"
+            name="accessCode"
+            value={quiz.accessCode}
+            onChange={handleChange}
+            placeholder="Leave blank for no access code"
+          />
+        </div>
+
+        <div className="form-check mb-2">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            name="oneQuestionAtTime"
+            checked={quiz.oneQuestionAtTime}
+            onChange={handleChange}
+          />
+          <label className="form-check-label">One Question at a Time</label>
+        </div>
+
+        <div className="form-check mb-2">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            name="webcamRequired"
+            checked={quiz.webcamRequired}
+            onChange={handleChange}
+          />
+          <label className="form-check-label">Webcam Required</label>
+        </div>
+
+        <div className="form-check mb-2">
+          <input
+            type="checkbox"
+            className="form-check-input"
+            name="lockQuestionsAfterAnswering"
+            checked={quiz.lockQuestionsAfterAnswering}
+            onChange={handleChange}
+          />
+          <label className="form-check-label">
+            Lock Questions After Answering
+          </label>
+        </div>
       </div>
 
-      {/* Dates */}
       <div className="mb-4">
         <div className="mb-2">
           <label className="form-label">Due Date</label>
