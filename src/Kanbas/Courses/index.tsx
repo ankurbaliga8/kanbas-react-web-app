@@ -8,6 +8,8 @@ import AssignmentEditor from "./Assignments/Editor";
 import PeopleTable from "./People/Table";
 import { FaAlignJustify } from "react-icons/fa6";
 import { useSelector } from "react-redux";
+import Quizzes from "./Quizzes";
+import QuizEditor from "./Quizzes/Editor";
 
 export default function Courses({ courses }: { courses: any[] }) {
   const { cid } = useParams();
@@ -33,6 +35,20 @@ export default function Courses({ courses }: { courses: any[] }) {
             <Route path="/Home" element={<Home />} />
             <Route path="/Modules" element={<Modules />} />
             <Route path="/Assignments" element={<Assignments />} />
+            <Route path="/Quizzes" element={<Quizzes />} />
+            <Route
+              path="/Quizzes/:qid"
+              element={
+                isFaculty ? (
+                  <QuizEditor />
+                ) : (
+                  <div className="p-4">
+                    <h2>Access Denied</h2>
+                    <p>You are not authorized to view this page.</p>
+                  </div>
+                )
+              }
+            />
             <Route
               path="/Assignments/:aid"
               element={
