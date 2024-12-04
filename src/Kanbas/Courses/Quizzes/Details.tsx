@@ -7,9 +7,25 @@ export default function Details({ quiz, setQuiz }: any) {
     >
   ) => {
     const { name, value, type } = e.target;
-    const newValue =
-      type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
-    setQuiz((prev: any) => ({ ...prev, [name]: newValue }));
+    let newValue: any;
+
+    if (type === "checkbox") {
+      newValue = (e.target as HTMLInputElement).checked;
+    } else if (
+      type === "number" &&
+      (name === "points" || name === "timeLimit")
+    ) {
+      const parsedValue = parseInt(value);
+      newValue =
+        value === "" ? 0 : isNaN(parsedValue) ? quiz[name] : parsedValue;
+    } else {
+      newValue = value;
+    }
+
+    setQuiz((prev: any) => ({
+      ...prev,
+      [name]: newValue,
+    }));
   };
 
   return (
@@ -58,6 +74,9 @@ export default function Details({ quiz, setQuiz }: any) {
           className="form-control"
           value={quiz.points}
           onChange={handleChange}
+          min="0"
+          step="1"
+          onWheel={(e) => e.currentTarget.blur()}
         />
       </div>
 
@@ -96,6 +115,9 @@ export default function Details({ quiz, setQuiz }: any) {
             name="timeLimit"
             value={quiz.timeLimit}
             onChange={handleChange}
+            min="0"
+            step="1"
+            onWheel={(e) => e.currentTarget.blur()}
           />
         </div>
 

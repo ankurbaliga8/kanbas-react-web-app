@@ -1,14 +1,36 @@
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { BsPencilSquare } from "react-icons/bs";
+import { findQuizzesForCourse } from "./client";
+import { setQuizzes } from "./reducer";
 
 export default function QuizDetails() {
   const { cid, qid } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
+
   const currentUser = useSelector(
     (state: any) => state.accountReducer.currentUser
   );
   const isFaculty = currentUser?.role === "FACULTY";
+
+  // Add useEffect to load quiz data
+  useEffect(() => {
+    const loadQuizzes = async () => {
+      try {
+        setLoading(true);
+        const quizzes = await findQuizzesForCourse(cid!);
+        dispatch(setQuizzes(quizzes));
+      } catch (error) {
+        console.error("Error loading quizzes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadQuizzes();
+  }, [cid, dispatch]);
 
   const quiz = useSelector((state: any) =>
     state.quizzesReducer.quizzes.find(
@@ -16,7 +38,13 @@ export default function QuizDetails() {
     )
   );
 
-  if (!quiz) return <div>Quiz not found</div>;
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!quiz) {
+    return <div>Quiz not found</div>;
+  }
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString();
@@ -60,7 +88,9 @@ export default function QuizDetails() {
                 <td className="text-end pe-4">
                   <strong>Points</strong>
                 </td>
-                <td>{quiz?.points || 0} pts</td>
+                <td>
+                  {typeof quiz?.points === "number" ? quiz.points : 0} pts
+                </td>
               </tr>
               <tr>
                 <td className="text-end pe-4">

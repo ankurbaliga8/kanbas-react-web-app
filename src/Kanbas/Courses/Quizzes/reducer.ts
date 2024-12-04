@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice } from "@reduxjs/toolkit";
 
 interface Quiz {
   _id: string;
@@ -10,28 +10,32 @@ interface Quiz {
 
 interface QuizState {
   quizzes: Quiz[];
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: QuizState = {
   quizzes: [],
+  loading: false,
+  error: null,
 };
 
 const quizzesSlice = createSlice({
   name: "quizzes",
   initialState,
   reducers: {
-    setQuizzes: (state, action: PayloadAction<Quiz[]>) => {
+    setQuizzes: (state, action) => {
       state.quizzes = action.payload;
     },
-    addQuiz: (state, action: PayloadAction<Quiz>) => {
+    addQuiz: (state, action) => {
       state.quizzes.push(action.payload);
     },
-    updateQuiz: (state, action: PayloadAction<Quiz>) => {
+    updateQuiz: (state, action) => {
       state.quizzes = state.quizzes.map((quiz) =>
         quiz._id === action.payload._id ? action.payload : quiz
       );
     },
-    deleteQuiz: (state, action: PayloadAction<string>) => {
+    deleteQuiz: (state, action) => {
       state.quizzes = state.quizzes.filter(
         (quiz) => quiz._id !== action.payload
       );

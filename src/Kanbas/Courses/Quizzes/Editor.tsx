@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { addQuiz, updateQuiz } from "./reducer";
-import { createQuizForCourse, updateQuizAPI } from "./client";
+import { addQuiz, updateQuiz, setQuizzes } from "./reducer";
+import {
+  createQuizForCourse,
+  updateQuizAPI,
+  findQuizzesForCourse,
+} from "./client";
 import Details from "./Details";
 import Questions from "./Questions";
 import { MdDoNotDisturbAlt } from "react-icons/md";
@@ -28,82 +32,123 @@ interface QuizState {
   webcamRequired: boolean;
   lockQuestionsAfterAnswering: boolean;
   published: boolean;
+  questions: Array<{
+    _id: string;
+    title: string;
+    points: number;
+    questionText: string;
+    type: "MULTIPLE_CHOICE" | "TRUE_FALSE" | "FILL_BLANK";
+    choices?: string[];
+    correctChoice?: number;
+    correctAnswer?: boolean;
+    possibleAnswers?: string[];
+  }>;
 }
 
 export default function QuizEditor() {
   const { cid, qid } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState("details");
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
 
-  const quizToEdit = useSelector((state: any) =>
+  // Load quizzes when component mounts
+  useEffect(() => {
+    const loadQuizzes = async () => {
+      try {
+        setLoading(true);
+        const quizzes = await findQuizzesForCourse(cid!);
+        dispatch(setQuizzes(quizzes));
+      } catch (error) {
+        console.error("Error loading quizzes:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadQuizzes();
+  }, [cid, dispatch]);
+
+  const quiz = useSelector((state: any) =>
     state.quizzesReducer.quizzes.find(
-      (quiz: any) => quiz._id === qid && quiz.course === cid
+      (q: any) => q._id === qid && q.course === cid
     )
   );
 
-  const [quiz, setQuiz] = useState<QuizState>({
-    _id: qid || "",
-    title: "",
-    course: cid || "",
-    description: "",
-    points: 0,
-    dueDate: "",
-    availableFrom: "",
-    availableUntil: "",
-    quizType: "GRADED_QUIZ",
-    assignmentGroup: "Quizzes",
-    shuffleAnswers: true,
-    timeLimit: 20,
-    multipleAttempts: false,
-    showCorrectAnswers: true,
-    accessCode: "",
-    oneQuestionAtTime: true,
-    webcamRequired: false,
-    lockQuestionsAfterAnswering: false,
-    published: false,
-  });
+  const [editedQuiz, setEditedQuiz] = useState<QuizState | null>(null);
 
   useEffect(() => {
-    if (quizToEdit) {
-      setQuiz(quizToEdit);
+    if (quiz) {
+      setEditedQuiz(quiz);
     }
-  }, [quizToEdit]);
+  }, [quiz]);
 
-  useEffect(() => {
-    // Set active tab based on URL
-    const path = location.pathname;
-    if (path.includes("/questions")) {
-      setActiveTab("questions");
-    } else {
-      setActiveTab("details");
-    }
-  }, [location]);
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!editedQuiz && qid !== "new") {
+    return <div>Quiz not found</div>;
+  }
+
+  // Initialize new quiz if needed
+  if (qid === "new" && !editedQuiz) {
+    const newQuiz: QuizState = {
+      _id: "new",
+      title: "New Quiz",
+      course: cid!,
+      description: "",
+      points: 100,
+      dueDate: "",
+      availableFrom: "",
+      availableUntil: "",
+      quizType: "GRADED_QUIZ",
+      assignmentGroup: "Quizzes",
+      shuffleAnswers: false,
+      timeLimit: 0,
+      multipleAttempts: false,
+      showCorrectAnswers: true,
+      accessCode: "",
+      oneQuestionAtTime: false,
+      webcamRequired: false,
+      lockQuestionsAfterAnswering: false,
+      published: false,
+      questions: [],
+    };
+    setEditedQuiz(newQuiz);
+  }
 
   const handleSave = async (andPublish: boolean = false) => {
+    if (!editedQuiz) {
+      console.error("No quiz to save");
+      return;
+    }
+
     try {
-      console.log("Before update - Quiz state:", quiz);
-      console.log("Attempting to publish:", andPublish);
+      // Create a deep copy to prevent state mutations
+      const quizToSave = JSON.parse(
+        JSON.stringify({
+          ...editedQuiz,
+          points: Number(editedQuiz.points),
+          timeLimit: Number(editedQuiz.timeLimit),
+          published: andPublish,
+          questions: editedQuiz.questions.map((q) => ({
+            ...q,
+            points: Number(q.points),
+          })),
+        })
+      );
+
+      console.log("Before update - Quiz state:", quizToSave);
 
       let savedQuiz;
       if (qid === "new") {
-        savedQuiz = await createQuizForCourse(cid!, {
-          ...quiz,
-          published: andPublish,
-        });
-        console.log("Created new quiz:", savedQuiz);
+        savedQuiz = await createQuizForCourse(cid!, quizToSave);
         dispatch(addQuiz(savedQuiz));
       } else {
-        savedQuiz = await updateQuizAPI(quiz._id, {
-          ...quiz,
-          published: andPublish,
-        });
-        console.log("Updated existing quiz:", savedQuiz);
+        savedQuiz = await updateQuizAPI(editedQuiz._id, quizToSave);
         dispatch(updateQuiz(savedQuiz));
       }
 
-      // Navigate to quiz view page if just saving, otherwise go to quizzes list
       if (andPublish) {
         navigate(`/Kanbas/Courses/${cid}/Quizzes`);
       } else {
@@ -120,7 +165,7 @@ export default function QuizEditor() {
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h2>{qid === "new" ? "New Quiz" : "Edit Quiz"}</h2>
         <div className="d-flex align-items-center">
-          {quiz.published ? (
+          {editedQuiz?.published ? (
             <div className="d-flex align-items-center text-success">
               <FaCheckCircle className="me-2" />
               <span>Published</span>
@@ -137,9 +182,10 @@ export default function QuizEditor() {
       <ul className="nav nav-tabs mb-4">
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "details" ? "active" : ""}`}
+            className={`nav-link ${
+              location.pathname.includes("/details") ? "active" : ""
+            }`}
             onClick={() => {
-              setActiveTab("details");
               navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/details`);
             }}
           >
@@ -148,9 +194,10 @@ export default function QuizEditor() {
         </li>
         <li className="nav-item">
           <button
-            className={`nav-link ${activeTab === "questions" ? "active" : ""}`}
+            className={`nav-link ${
+              location.pathname.includes("/questions") ? "active" : ""
+            }`}
             onClick={() => {
-              setActiveTab("questions");
               navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/questions`);
             }}
           >
@@ -159,11 +206,11 @@ export default function QuizEditor() {
         </li>
       </ul>
 
-      {activeTab === "details" ? (
-        <Details quiz={quiz} setQuiz={setQuiz} />
-      ) : (
-        <Questions quiz={quiz} setQuiz={setQuiz} />
-      )}
+      {location.pathname.includes("/details") ? (
+        <Details quiz={editedQuiz} setQuiz={setEditedQuiz} />
+      ) : location.pathname.includes("/questions") ? (
+        <Questions quiz={editedQuiz} setQuiz={setEditedQuiz} />
+      ) : null}
 
       <hr />
       <div className="d-flex justify-content-end gap-2">

@@ -27,16 +27,16 @@ export default function Quizzes() {
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      if (!cid) return;
+    const loadQuizzes = async () => {
       try {
-        const courseQuizzes = await findQuizzesForCourse(cid);
-        dispatch(setQuizzes(courseQuizzes));
+        const quizzes = await findQuizzesForCourse(cid!);
+        console.log("Loaded quizzes:", quizzes);
+        dispatch(setQuizzes(quizzes));
       } catch (error) {
-        console.error("Error fetching quizzes:", error);
+        console.error("Error loading quizzes:", error);
       }
     };
-    fetchQuizzes();
+    loadQuizzes();
   }, [cid, dispatch]);
 
   const filteredQuizzes =
@@ -93,6 +93,10 @@ export default function Quizzes() {
     }
   };
 
+  const handleQuizClick = (quizId: string) => {
+    navigate(`/Kanbas/Courses/${cid}/Quizzes/${quizId}/view`);
+  };
+
   return (
     <div className="p-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -143,7 +147,11 @@ export default function Quizzes() {
               className="list-group-item d-flex justify-content-between align-items-center"
               style={{ borderLeft: "5px solid green", borderRadius: "0" }}
             >
-              <div className="d-flex align-items-center">
+              <div
+                className="d-flex align-items-center"
+                style={{ cursor: "pointer" }}
+                onClick={() => handleQuizClick(quiz._id)}
+              >
                 {isFaculty && (
                   <>
                     <BsGripVertical className="me-3 fs-5 text-muted" />
@@ -151,12 +159,7 @@ export default function Quizzes() {
                   </>
                 )}
                 <div>
-                  <Link
-                    to={`/Kanbas/Courses/${cid}/Quizzes/${quiz._id}/view`}
-                    className="text-dark fw-bold text-decoration-none"
-                  >
-                    {quiz.title}
-                  </Link>
+                  <span className="text-dark fw-bold">{quiz.title}</span>
                   <br />
                   <small className="text-muted">
                     <span
@@ -171,7 +174,7 @@ export default function Quizzes() {
                       {getAvailabilityStatus(quiz)}
                     </span>{" "}
                     | <strong>Due</strong> {quiz.dueDate} | {quiz.points} pts |{" "}
-                    {quiz.questions} questions
+                    {quiz.questions?.length || 0} questions
                   </small>
                 </div>
               </div>
