@@ -29,6 +29,53 @@ interface QuizAttempt {
   isCorrectByQuestion: { [key: string]: boolean };
 }
 
+const getStoredTimerState = (quizId: string) => {
+  const stored = localStorage.getItem(`quiz_timer_${quizId}`);
+  if (stored) {
+    const { endTime } = JSON.parse(stored);
+    const remaining = Math.floor(
+      (new Date(endTime).getTime() - Date.now()) / 1000
+    );
+    return remaining > 0 ? remaining : null;
+  }
+  return null;
+};
+
+const setStoredTimerState = (quizId: string, timeRemaining: number) => {
+  const endTime = new Date(Date.now() + timeRemaining * 1000).toISOString();
+  localStorage.setItem(`quiz_timer_${quizId}`, JSON.stringify({ endTime }));
+};
+
+const clearStoredTimerState = (quizId: string) => {
+  localStorage.removeItem(`quiz_timer_${quizId}`);
+};
+
+const getStoredAnswers = (quizId: string) => {
+  const stored = localStorage.getItem(`quiz_answers_${quizId}`);
+  return stored ? JSON.parse(stored) : [];
+};
+
+const setStoredAnswers = (quizId: string, answers: Answer[]) => {
+  localStorage.setItem(`quiz_answers_${quizId}`, JSON.stringify(answers));
+};
+
+const clearStoredAnswers = (quizId: string) => {
+  localStorage.removeItem(`quiz_answers_${quizId}`);
+};
+
+const getStoredQuizStartedState = (quizId: string) => {
+  const stored = localStorage.getItem(`quiz_started_${quizId}`);
+  return stored === "true";
+};
+
+const setStoredQuizStartedState = (quizId: string, started: boolean) => {
+  localStorage.setItem(`quiz_started_${quizId}`, started.toString());
+};
+
+const clearStoredQuizStartedState = (quizId: string) => {
+  localStorage.removeItem(`quiz_started_${quizId}`);
+};
+
 export default function QuizPreview() {
   const { cid, qid } = useParams();
   const navigate = useNavigate();
@@ -50,6 +97,7 @@ export default function QuizPreview() {
     number | null
   >(null);
   const location = useLocation();
+  const [quizStarted, setQuizStarted] = useState(false);
 
   const currentUser = useSelector(
     (state: any) => state.accountReducer.currentUser
@@ -199,12 +247,16 @@ export default function QuizPreview() {
         });
       }
 
+      // Store answers in localStorage
+      setStoredAnswers(qid!, newAnswers);
       return newAnswers;
     });
   };
 
   const handleAutoSubmit = async () => {
     if (!quiz || submitted) return; // Prevent multiple submissions
+    clearStoredTimerState(qid!);
+    clearStoredAnswers(qid!);
     await submitQuiz();
   };
 
@@ -213,6 +265,8 @@ export default function QuizPreview() {
     if (timerInterval) {
       clearInterval(timerInterval);
     }
+    clearStoredTimerState(qid!);
+    clearStoredAnswers(qid!);
     await submitQuiz();
   };
 
@@ -275,37 +329,66 @@ export default function QuizPreview() {
     } catch (error) {
       console.error("Error saving attempt:", error);
     }
+
+    // Clear all stored state after submission
+    clearStoredTimerState(qid!);
+    clearStoredAnswers(qid!);
+    clearStoredQuizStartedState(qid!);
+    setQuizStarted(false);
   };
 
   useEffect(() => {
-    if (quiz?.timeLimit && !submitted && !isFaculty) {
-      const timeInSeconds = quiz.timeLimit * 60;
-      setTimeRemaining(timeInSeconds);
+    if (quiz?.timeLimit && !submitted) {
+      const storedTimeRemaining = getStoredTimerState(qid!);
+      const storedQuizStarted = getStoredQuizStartedState(qid!);
 
-      const interval = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev === null) return null;
-          if (prev <= 1) {
-            clearInterval(interval);
-            // Clear any existing intervals to prevent double submission
-            if (timerInterval) {
-              clearInterval(timerInterval);
-            }
-            setShowSubmitConfirm(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      setTimerInterval(interval);
-      return () => {
-        if (interval) {
-          clearInterval(interval);
+      // If quiz was started and has stored time
+      if (storedQuizStarted && storedTimeRemaining !== null) {
+        if (storedTimeRemaining <= 0) {
+          setTimeRemaining(0);
+          setShowSubmitConfirm(true);
+          return; // Don't start timer if time is already up
         }
-      };
+        setTimeRemaining(storedTimeRemaining);
+        setQuizStarted(true);
+      } else if (quizStarted) {
+        const initialTime = quiz.timeLimit * 60;
+        setTimeRemaining(initialTime);
+        setStoredTimerState(qid!, initialTime);
+      }
+
+      // Only start timer if quiz is started and time remaining is positive
+      if ((storedQuizStarted || quizStarted) && !submitted) {
+        const interval = setInterval(() => {
+          setTimeRemaining((prev) => {
+            // Handle null case explicitly
+            if (prev === null) {
+              clearInterval(interval);
+              return 0;
+            }
+
+            if (prev <= 0) {
+              clearInterval(interval);
+              setStoredTimerState(qid!, 0);
+              setShowSubmitConfirm(true);
+              return 0;
+            }
+
+            const newTime = prev - 1;
+            setStoredTimerState(qid!, newTime);
+            return newTime;
+          });
+        }, 1000);
+
+        setTimerInterval(interval);
+
+        // Cleanup function
+        return () => {
+          clearInterval(interval);
+        };
+      }
     }
-  }, [quiz?.timeLimit, submitted, isFaculty]);
+  }, [quiz?.timeLimit, quizStarted, submitted, qid]);
 
   useEffect(() => {
     const loadAttempts = async () => {
@@ -319,6 +402,29 @@ export default function QuizPreview() {
     };
     loadAttempts();
   }, [qid, currentUser._id]);
+
+  useEffect(() => {
+    if (!submitted && qid) {
+      const storedAnswers = getStoredAnswers(qid);
+      if (storedAnswers.length > 0) {
+        setAnswers(storedAnswers);
+      }
+    }
+  }, [qid, submitted]);
+
+  useEffect(() => {
+    if (!submitted && qid && !isFaculty) {
+      const wasQuizStarted = getStoredQuizStartedState(qid);
+      if (wasQuizStarted) {
+        setQuizStarted(true);
+        // Load stored answers if they exist
+        const storedAnswers = getStoredAnswers(qid);
+        if (storedAnswers.length > 0) {
+          setAnswers(storedAnswers);
+        }
+      }
+    }
+  }, [qid, submitted, isFaculty]);
 
   const getHighestScore = (attempts: QuizAttempt[]) => {
     if (!attempts || attempts.length === 0) return 0;
@@ -379,6 +485,30 @@ export default function QuizPreview() {
     return true;
   };
 
+  const handleStartQuiz = () => {
+    // Clear any existing stored state before starting
+    clearStoredAnswers(qid!);
+    clearStoredTimerState(qid!);
+    clearStoredQuizStartedState(qid!);
+
+    // Reset component state
+    setAnswers([]);
+    setCurrentQuestionIndex(0);
+    setSubmitted(false);
+    setScore(0);
+
+    // Initialize new quiz state
+    if (quiz?.timeLimit) {
+      const initialTime = quiz.timeLimit * 60;
+      setTimeRemaining(initialTime);
+      setStoredTimerState(qid!, initialTime);
+    }
+
+    // Start the quiz
+    setQuizStarted(true);
+    setStoredQuizStartedState(qid!, true);
+  };
+
   return (
     <div className="p-4">
       {!quiz ? (
@@ -421,7 +551,7 @@ export default function QuizPreview() {
                   </div>
                 </div>
               )}
-              {!isFaculty && timeRemaining !== null && !submitted && (
+              {timeRemaining !== null && !submitted && (
                 <div
                   className={`alert ${
                     timeRemaining < 60 ? "alert-danger" : "alert-info"
@@ -447,7 +577,27 @@ export default function QuizPreview() {
             </div>
           </div>
 
-          {!submitted && quiz && (
+          {!submitted && quiz && !quizStarted && canAttemptQuiz() && (
+            <div className="text-center p-5">
+              <h3>Ready to start the quiz?</h3>
+              <p>
+                Once you start, the timer will begin and you cannot pause it.
+              </p>
+              {quiz.timeLimit && (
+                <p>
+                  You will have {quiz.timeLimit} minutes to complete this quiz.
+                </p>
+              )}
+              <button
+                className="btn btn-primary btn-lg"
+                onClick={handleStartQuiz}
+              >
+                Start Quiz
+              </button>
+            </div>
+          )}
+
+          {!submitted && quiz && quizStarted && (
             <div className="quiz-questions mt-4">
               <div className="question-navigation mb-4">
                 {quiz.questions.map((_: any, index: number) => (
@@ -597,7 +747,7 @@ export default function QuizPreview() {
                 </p>
                 {quiz.multipleAttempts && (
                   <p>
-                    Attempts used: {attempts.length} / {quiz.maxAttempts || "∞"}
+                    Attempts used: {attempts.length} / {quiz.maxAttempts || ""}
                   </p>
                 )}
                 <p>
@@ -702,7 +852,9 @@ export default function QuizPreview() {
               <div className="modal-dialog">
                 <div className="modal-content">
                   <div className="modal-header">
-                    <h5 className="modal-title">Submit Quiz</h5>
+                    <h5 className="modal-title">
+                      {timeRemaining === 0 ? "Time's Up!" : "Submit Quiz"}
+                    </h5>
                     {timeRemaining !== 0 && (
                       <button
                         type="button"
@@ -713,7 +865,13 @@ export default function QuizPreview() {
                   </div>
                   <div className="modal-body">
                     {timeRemaining === 0 ? (
-                      <p>Time's up! Please submit your quiz now.</p>
+                      <p className="text-danger">
+                        <strong>
+                          The time limit for this quiz has expired.
+                        </strong>
+                        <br />
+                        Your answers will be automatically submitted.
+                      </p>
                     ) : (
                       <p>
                         Are you sure you want to submit this quiz? You won't be
@@ -733,13 +891,13 @@ export default function QuizPreview() {
                     )}
                     <button
                       type="button"
-                      className="btn btn-success"
+                      className="btn btn-primary"
                       onClick={() => {
                         submitQuiz();
                         setShowSubmitConfirm(false);
                       }}
                     >
-                      Submit Quiz
+                      {timeRemaining === 0 ? "Submit Now" : "Submit Quiz"}
                     </button>
                   </div>
                 </div>
