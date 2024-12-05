@@ -158,6 +158,14 @@ export default function QuizPreview() {
 
   return (
     <div className="p-4">
+      {isFaculty && (
+        <div className="alert alert-info mb-4">
+          <i className="fas fa-info-circle me-2"></i>
+          This is a preview of the published version of the quiz. Students will
+          not see this message.
+        </div>
+      )}
+
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>{quiz.title}</h2>
         {isFaculty && (
