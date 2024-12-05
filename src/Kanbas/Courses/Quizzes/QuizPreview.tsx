@@ -676,22 +676,20 @@ export default function QuizPreview() {
                         )}
                       </div>
                       {/* Show correct answer only if allowed */}
-                      {quiz.showCorrectAnswers &&
-                        (!quiz.multipleAttempts ||
-                          currentUser?.role !== "STUDENT") && (
-                          <div className="mt-2 text-success">
-                            <strong>Correct Answer:</strong>
-                            {question.type === "MULTIPLE_CHOICE" && (
-                              <p>{question.choices[question.correctChoice]}</p>
-                            )}
-                            {question.type === "FILL_BLANK" && (
-                              <p>{question.correctAnswer}</p>
-                            )}
-                            {question.type === "TRUE_FALSE" && (
-                              <p>{question.correctAnswer ? "True" : "False"}</p>
-                            )}
-                          </div>
-                        )}
+                      {quiz.showCorrectAnswers && (
+                        <div className="mt-2 text-success">
+                          <strong>Correct Answer:</strong>
+                          {question.type === "MULTIPLE_CHOICE" && (
+                            <p>{question.choices[question.correctChoice]}</p>
+                          )}
+                          {question.type === "FILL_BLANK" && (
+                            <p>{question.correctAnswer}</p>
+                          )}
+                          {question.type === "TRUE_FALSE" && (
+                            <p>{question.correctAnswer ? "True" : "False"}</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
