@@ -2,22 +2,40 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { BsPencilSquare } from "react-icons/bs";
-import { findQuizzesForCourse } from "./client";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { findQuizzesForCourse, getQuizAttempts } from "./client";
 import { setQuizzes } from "./reducer";
 import QuizPreview from "./QuizPreview";
+
+interface Answer {
+  questionId: string;
+  selectedChoice?: number;
+  selectedAnswer?: boolean;
+  textAnswer?: string;
+  isCorrect?: boolean;
+}
+
+interface QuizAttempt {
+  attemptNumber: number;
+  studentId: string;
+  answers: Answer[];
+  score: number;
+  submittedAt: string;
+  isCorrectByQuestion: { [key: string]: boolean };
+}
 
 export default function QuizDetails() {
   const { cid, qid } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(true);
+  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
 
   const currentUser = useSelector(
     (state: any) => state.accountReducer.currentUser
   );
   const isFaculty = currentUser?.role === "FACULTY";
 
-  // Add useEffect to load quiz data
   useEffect(() => {
     const loadQuizzes = async () => {
       try {
@@ -32,6 +50,26 @@ export default function QuizDetails() {
     };
     loadQuizzes();
   }, [cid, dispatch]);
+
+  useEffect(() => {
+    const loadAttempts = async () => {
+      try {
+        if (!qid || !currentUser?._id) return;
+        const loadedAttempts = await getQuizAttempts(qid, currentUser._id);
+        // Sort attempts by attempt number in descending order
+        setAttempts(
+          loadedAttempts.sort(
+            (a: QuizAttempt, b: QuizAttempt) =>
+              b.attemptNumber - a.attemptNumber
+          )
+        );
+      } catch (error) {
+        console.error("Error loading attempts:", error);
+        setAttempts([]);
+      }
+    };
+    loadAttempts();
+  }, [qid, currentUser._id]);
 
   const quiz = useSelector((state: any) =>
     state.quizzesReducer.quizzes.find(
@@ -219,6 +257,37 @@ export default function QuizDetails() {
               </tr>
             </tbody>
           </table>
+
+          {!isFaculty && attempts.length > 0 && (
+            <div className="mt-4">
+              <h3>Your Attempts</h3>
+              <div className="list-group">
+                {attempts.map((attempt) => (
+                  <div
+                    key={attempt.attemptNumber}
+                    className="list-group-item list-group-item-action"
+                    onClick={() =>
+                      navigate(
+                        `/Kanbas/Courses/${cid}/Quizzes/${qid}/preview?attempt=${attempt.attemptNumber}`
+                      )
+                    }
+                    style={{ cursor: "pointer" }}
+                  >
+                    <div className="d-flex justify-content-between align-items-center">
+                      <h5>Attempt {attempt.attemptNumber}</h5>
+                      <span className="badge bg-primary">
+                        Score: {attempt.score} / {quiz.points}
+                      </span>
+                    </div>
+                    <p className="mb-1">
+                      Submitted:{" "}
+                      {new Date(attempt.submittedAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

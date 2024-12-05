@@ -1,15 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { BsPencilSquare } from "react-icons/bs";
-import { findQuizzesForCourse } from "./client";
+import {
+  findQuizzesForCourse,
+  saveQuizAttempt,
+  getQuizAttempts,
+  getSpecificQuizAttempt,
+} from "./client";
 import { setQuizzes } from "./reducer";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 interface Answer {
   questionId: string;
   selectedChoice?: number;
   selectedAnswer?: boolean;
   textAnswer?: string;
+  isCorrect?: boolean;
+}
+
+interface QuizAttempt {
+  quizId: string;
+  attemptNumber: number;
+  studentId: string;
+  answers: Answer[];
+  score: number;
+  submittedAt: string;
+  isCorrectByQuestion: { [key: string]: boolean };
 }
 
 export default function QuizPreview() {
@@ -22,6 +39,17 @@ export default function QuizPreview() {
   const [score, setScore] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [currentAttempt, setCurrentAttempt] = useState<number>(0);
+  const [viewingResults, setViewingResults] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(
+    null
+  );
+  const [viewingAttemptNumber, setViewingAttemptNumber] = useState<
+    number | null
+  >(null);
+  const location = useLocation();
 
   const currentUser = useSelector(
     (state: any) => state.accountReducer.currentUser
@@ -29,7 +57,6 @@ export default function QuizPreview() {
   const isFaculty = currentUser?.role === "FACULTY";
 
   console.log("Preview params:", { cid, qid });
-
   useEffect(() => {
     const loadQuizzes = async () => {
       try {
@@ -47,6 +74,44 @@ export default function QuizPreview() {
     loadQuizzes();
   }, [cid, dispatch]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const attemptParam = params.get("attempt");
+
+    if (attemptParam) {
+      const attemptNumber = parseInt(attemptParam);
+      setViewingAttemptNumber(attemptNumber);
+
+      const loadAttempt = async () => {
+        try {
+          const attempt = await getSpecificQuizAttempt(
+            qid!,
+            currentUser._id,
+            attemptNumber
+          );
+          if (attempt) {
+            setAnswers(attempt.answers);
+            setScore(attempt.score);
+            setSubmitted(true);
+            setViewingResults(true);
+            setAttempts((prev) => {
+              const exists = prev.some(
+                (a) => a.attemptNumber === attempt.attemptNumber
+              );
+              if (!exists) {
+                return [...prev, attempt];
+              }
+              return prev;
+            });
+          }
+        } catch (error) {
+          console.error("Error loading attempt:", error);
+        }
+      };
+      loadAttempt();
+    }
+  }, [location.search, qid, currentUser._id]);
+
   const quiz = useSelector((state: any) => {
     const quizzes = state.quizzesReducer.quizzes;
     console.log("Current quizzes in store:", quizzes);
@@ -54,6 +119,206 @@ export default function QuizPreview() {
   });
 
   console.log("Selected quiz:", quiz);
+
+  const calculateScore = () => {
+    let totalScore = 0;
+    quiz.questions.forEach((question: any) => {
+      const answer = answers.find((a) => a.questionId === question._id);
+      if (!answer) return; // Skip if question not answered
+
+      if (question.type === "FILL_BLANK") {
+        const userAnswer = answer.textAnswer?.toLowerCase().trim();
+        if (!userAnswer) return;
+        const possibleAnswers = question.possibleAnswers || [
+          question.correctAnswer,
+        ];
+        const isCorrect = possibleAnswers.some(
+          (possible: string) => possible?.toLowerCase().trim() === userAnswer
+        );
+        if (isCorrect) {
+          totalScore += question.points;
+        }
+      } else if (question.type === "MULTIPLE_CHOICE") {
+        if (answer.selectedChoice === question.correctChoice) {
+          totalScore += question.points;
+        }
+      } else if (question.type === "TRUE_FALSE") {
+        if (answer.selectedAnswer === question.correctAnswer) {
+          totalScore += question.points;
+        }
+      }
+    });
+    return totalScore;
+  };
+
+  const handleAnswerChange = (questionId: string, value: any) => {
+    setAnswers((prev) => {
+      const existingAnswerIndex = prev.findIndex(
+        (a) => a.questionId === questionId
+      );
+      const newAnswer = { questionId, ...value };
+
+      let newAnswers: Answer[];
+      if (existingAnswerIndex !== -1) {
+        newAnswers = [...prev];
+        newAnswers[existingAnswerIndex] = newAnswer;
+      } else {
+        newAnswers = [...prev, newAnswer];
+      }
+
+      if (quiz) {
+        const currentScore = calculateScore();
+        const currentIsCorrectByQuestion: { [key: string]: boolean } = {};
+
+        quiz.questions.forEach((question: any) => {
+          const answer = newAnswers.find(
+            (a: Answer) => a.questionId === question._id
+          );
+          currentIsCorrectByQuestion[question._id] = false;
+
+          if (answer) {
+            if (question.type === "FILL_BLANK") {
+              const userAnswer = answer.textAnswer?.toLowerCase().trim();
+              if (userAnswer) {
+                const possibleAnswers = question.possibleAnswers || [
+                  question.correctAnswer,
+                ];
+                currentIsCorrectByQuestion[question._id] = possibleAnswers.some(
+                  (possible: string) =>
+                    possible?.toLowerCase().trim() === userAnswer
+                );
+              }
+            } else if (question.type === "MULTIPLE_CHOICE") {
+              currentIsCorrectByQuestion[question._id] =
+                answer.selectedChoice === question.correctChoice;
+            } else if (question.type === "TRUE_FALSE") {
+              currentIsCorrectByQuestion[question._id] =
+                answer.selectedAnswer === question.correctAnswer;
+            }
+          }
+        });
+      }
+
+      return newAnswers;
+    });
+  };
+
+  const handleAutoSubmit = async () => {
+    if (!quiz || submitted) return; // Prevent multiple submissions
+    await submitQuiz();
+  };
+
+  const confirmSubmit = async () => {
+    if (!quiz || submitted) return; // Prevent multiple submissions
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+    await submitQuiz();
+  };
+
+  const submitQuiz = async () => {
+    if (submitted) return;
+
+    const finalScore = calculateScore();
+    const isCorrectByQuestion: { [key: string]: boolean } = {};
+
+    quiz.questions.forEach((question: any) => {
+      const answer = answers.find((a) => a.questionId === question._id);
+      isCorrectByQuestion[question._id] = false;
+
+      if (answer) {
+        if (question.type === "FILL_BLANK") {
+          const userAnswer = answer.textAnswer?.toLowerCase().trim();
+          if (userAnswer) {
+            const possibleAnswers = question.possibleAnswers || [
+              question.correctAnswer,
+            ];
+            isCorrectByQuestion[question._id] = possibleAnswers.some(
+              (possible: string) =>
+                possible?.toLowerCase().trim() === userAnswer
+            );
+          }
+        } else if (question.type === "MULTIPLE_CHOICE") {
+          isCorrectByQuestion[question._id] =
+            answer.selectedChoice === question.correctChoice;
+        } else if (question.type === "TRUE_FALSE") {
+          isCorrectByQuestion[question._id] =
+            answer.selectedAnswer === question.correctAnswer;
+        }
+      }
+    });
+
+    try {
+      const currentAttempts = await getQuizAttempts(qid!, currentUser._id);
+      const attemptNumber = currentAttempts.length + 1;
+
+      const newAttempt = {
+        quizId: qid!,
+        attemptNumber,
+        studentId: currentUser._id,
+        answers: JSON.parse(JSON.stringify(answers)), // Deep copy of answers
+        score: finalScore,
+        submittedAt: new Date().toISOString(),
+        isCorrectByQuestion,
+      };
+
+      const savedAttempt = await saveQuizAttempt(qid!, newAttempt);
+      setSubmitted(true);
+      setAttempts((prev) => [...prev, savedAttempt]);
+      setScore(finalScore);
+      setViewingResults(true);
+      setViewingAttemptNumber(attemptNumber);
+
+      navigate(
+        `/Kanbas/Courses/${cid}/Quizzes/${qid}/preview?attempt=${attemptNumber}`
+      );
+    } catch (error) {
+      console.error("Error saving attempt:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (quiz?.timeLimit && !submitted && !isFaculty) {
+      const timeInSeconds = quiz.timeLimit * 60;
+      setTimeRemaining(timeInSeconds);
+
+      const interval = setInterval(() => {
+        setTimeRemaining((prev) => {
+          if (prev === null) return null;
+          if (prev <= 1) {
+            clearInterval(interval);
+            // Clear any existing intervals to prevent double submission
+            if (timerInterval) {
+              clearInterval(timerInterval);
+            }
+            submitQuiz(); // Single submission when timer hits 0
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      setTimerInterval(interval);
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    }
+  }, [quiz?.timeLimit, submitted, isFaculty]);
+
+  useEffect(() => {
+    const loadAttempts = async () => {
+      if (!qid || !currentUser?._id) return;
+      try {
+        const loadedAttempts = await getQuizAttempts(qid, currentUser._id);
+        setAttempts(loadedAttempts || []);
+      } catch (error) {
+        console.error("Error loading attempts:", error);
+      }
+    };
+    loadAttempts();
+  }, [qid, currentUser._id]);
 
   if (loading) {
     return <div className="p-4">Loading quiz preview...</div>;
@@ -77,67 +342,8 @@ export default function QuizPreview() {
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
-  const handleAnswerChange = (questionId: string, value: any) => {
-    setAnswers((prev) => {
-      const existingAnswerIndex = prev.findIndex(
-        (a) => a.questionId === questionId
-      );
-      if (existingAnswerIndex !== -1) {
-        const newAnswers = [...prev];
-        newAnswers[existingAnswerIndex] = {
-          questionId,
-          ...value,
-        };
-        return newAnswers;
-      }
-      return [...prev, { questionId, ...value }];
-    });
-  };
-
-  const calculateScore = () => {
-    let totalScore = 0;
-    answers.forEach((answer) => {
-      const question = quiz.questions.find(
-        (q: any) => q._id === answer.questionId
-      );
-      if (question) {
-        if (question.type === "FILL_BLANK") {
-          const userAnswer = answer.textAnswer?.toLowerCase().trim();
-          const possibleAnswers = question.possibleAnswers || [
-            question.correctAnswer,
-          ];
-          const isCorrect = possibleAnswers.some(
-            (possible: string) => possible?.toLowerCase().trim() === userAnswer
-          );
-          if (isCorrect) {
-            totalScore += question.points;
-          }
-        } else if (
-          question.type === "MULTIPLE_CHOICE" &&
-          answer.selectedChoice === question.correctChoice
-        ) {
-          totalScore += question.points;
-        } else if (
-          question.type === "TRUE_FALSE" &&
-          answer.selectedAnswer === question.correctAnswer
-        ) {
-          totalScore += question.points;
-        }
-      }
-    });
-    console.log("Total score:", totalScore);
-    return totalScore;
-  };
-
   const handleSubmitClick = () => {
     setShowSubmitConfirm(true);
-  };
-
-  const confirmSubmit = () => {
-    const finalScore = calculateScore();
-    setScore(finalScore);
-    setSubmitted(true);
-    setShowSubmitConfirm(false);
   };
 
   const handleNext = () => {
@@ -156,199 +362,332 @@ export default function QuizPreview() {
     setCurrentQuestionIndex(index);
   };
 
+  const isViewingPreviousAttempt = viewingAttemptNumber !== null;
+
   return (
     <div className="p-4">
-      {isFaculty && (
-        <div className="alert alert-info mb-4">
-          <i className="fas fa-info-circle me-2"></i>
-          This is a preview of the published version of the quiz. Students will
-          not see this message.
-        </div>
-      )}
-
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>{quiz.title}</h2>
-        {isFaculty && (
-          <button
-            className="btn btn-primary"
-            onClick={() =>
-              navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/questions`)
-            }
-          >
-            <BsPencilSquare className="me-2" />
-            Edit Quiz
-          </button>
-        )}
-      </div>
-
-      {submitted ? (
-        <div className="alert alert-success">
-          Your score: {score} out of {quiz.points} points
-        </div>
+      {!quiz ? (
+        <div>Loading...</div>
       ) : (
         <>
-          <div className="card mb-3">
-            <div className="card-header bg-light">
-              Question {currentQuestionIndex + 1}
-              <span className="float-end">{currentQuestion.points} pts</span>
-            </div>
-            <div className="card-body">
-              <p>{currentQuestion.questionText}</p>
-
-              {currentQuestion.type === "MULTIPLE_CHOICE" && (
-                <div className="list-group">
-                  {currentQuestion.choices.map(
-                    (choice: string, index: number) => (
-                      <label key={index} className="list-group-item">
-                        <input
-                          type="radio"
-                          name={`question-${currentQuestion._id}`}
-                          className="me-2"
-                          checked={
-                            answers.find(
-                              (a) => a.questionId === currentQuestion._id
-                            )?.selectedChoice === index
-                          }
-                          onChange={() =>
-                            handleAnswerChange(currentQuestion._id, {
-                              selectedChoice: index,
-                            })
-                          }
-                        />
-                        {choice}
-                      </label>
-                    )
-                  )}
-                </div>
-              )}
-
-              {currentQuestion.type === "TRUE_FALSE" && (
-                <div className="list-group">
-                  {["True", "False"].map((choice, index) => (
-                    <label key={index} className="list-group-item">
-                      <input
-                        type="radio"
-                        name={`question-${currentQuestion._id}`}
-                        className="me-2"
-                        checked={
-                          answers.find(
-                            (a) => a.questionId === currentQuestion._id
-                          )?.selectedAnswer ===
-                          (choice === "True")
-                        }
-                        onChange={() =>
-                          handleAnswerChange(currentQuestion._id, {
-                            selectedAnswer: choice === "True",
-                          })
-                        }
-                      />
-                      {choice}
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {currentQuestion.type === "FILL_BLANK" && (
-                <div className="mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Type your answer here"
-                    value={
-                      answers.find((a) => a.questionId === currentQuestion._id)
-                        ?.textAnswer || ""
-                    }
-                    onChange={(e) =>
-                      handleAnswerChange(currentQuestion._id, {
-                        textAnswer: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
+          {viewingAttemptNumber && (
+            <div className="mb-4">
               <button
                 className="btn btn-secondary"
-                onClick={handlePrevious}
-                disabled={currentQuestionIndex === 0}
+                onClick={() =>
+                  navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/view`)
+                }
               >
-                Previous
+                Back to Quiz Details
               </button>
-              <div className="d-flex gap-2">
+            </div>
+          )}
+          {isFaculty && (
+            <div className="alert alert-info mb-4">
+              <i className="fas fa-info-circle me-2"></i>
+              This is a preview of the published version of the quiz. Students
+              will not see this message.
+            </div>
+          )}
+
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h2>{quiz.title}</h2>
+            {!isFaculty && timeRemaining !== null && !submitted && (
+              <div
+                className={`alert ${
+                  timeRemaining < 60 ? "alert-danger" : "alert-info"
+                } mb-0`}
+              >
+                Time Remaining: {Math.floor(timeRemaining / 60)}:
+                {String(timeRemaining % 60).padStart(2, "0")}
+              </div>
+            )}
+            {isFaculty && (
+              <button
+                className="btn btn-primary"
+                onClick={() =>
+                  navigate(
+                    `/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/questions`
+                  )
+                }
+              >
+                <BsPencilSquare className="me-2" />
+                Edit Quiz
+              </button>
+            )}
+          </div>
+
+          {!submitted && quiz && (
+            <div className="quiz-questions mt-4">
+              <div className="question-navigation mb-4">
                 {quiz.questions.map((_: any, index: number) => (
                   <button
                     key={index}
                     className={`btn ${
                       currentQuestionIndex === index
                         ? "btn-primary"
-                        : "btn-outline-secondary"
-                    }`}
-                    onClick={() => goToQuestion(index)}
+                        : "btn-outline-primary"
+                    } me-2 mb-2`}
+                    onClick={() => setCurrentQuestionIndex(index)}
                   >
                     {index + 1}
                   </button>
                 ))}
               </div>
-              <button
-                className="btn btn-secondary"
-                onClick={handleNext}
-                disabled={currentQuestionIndex === quiz.questions.length - 1}
-              >
-                Next
-              </button>
-            </div>
 
-            <div className="d-flex justify-content-end mt-4">
-              <button className="btn btn-success" onClick={handleSubmitClick}>
-                Submit Quiz
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+              {quiz.questions[currentQuestionIndex] && (
+                <div className="card">
+                  <div className="card-header">
+                    Question {currentQuestionIndex + 1}
+                  </div>
+                  <div className="card-body">
+                    <p>{quiz.questions[currentQuestionIndex].questionText}</p>
 
-      {showSubmitConfirm && (
-        <div
-          className="modal d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">Submit Quiz</h5>
+                    {quiz.questions[currentQuestionIndex].type ===
+                      "MULTIPLE_CHOICE" && (
+                      <div className="choices">
+                        {quiz.questions[currentQuestionIndex].choices.map(
+                          (choice: string, index: number) => (
+                            <div key={index} className="form-check">
+                              <input
+                                type="radio"
+                                className="form-check-input"
+                                name={`question-${quiz.questions[currentQuestionIndex]._id}`}
+                                checked={
+                                  answers.find(
+                                    (a) =>
+                                      a.questionId ===
+                                      quiz.questions[currentQuestionIndex]._id
+                                  )?.selectedChoice === index
+                                }
+                                onChange={() =>
+                                  handleAnswerChange(
+                                    quiz.questions[currentQuestionIndex]._id,
+                                    { selectedChoice: index }
+                                  )
+                                }
+                              />
+                              <label className="form-check-label">
+                                {choice}
+                              </label>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    )}
+
+                    {quiz.questions[currentQuestionIndex].type ===
+                      "TRUE_FALSE" && (
+                      <div className="choices">
+                        {["True", "False"].map((choice, index) => (
+                          <div key={index} className="form-check">
+                            <input
+                              type="radio"
+                              className="form-check-input"
+                              name={`question-${quiz.questions[currentQuestionIndex]._id}`}
+                              checked={
+                                answers.find(
+                                  (a) =>
+                                    a.questionId ===
+                                    quiz.questions[currentQuestionIndex]._id
+                                )?.selectedAnswer ===
+                                (choice === "True")
+                              }
+                              onChange={() =>
+                                handleAnswerChange(
+                                  quiz.questions[currentQuestionIndex]._id,
+                                  { selectedAnswer: choice === "True" }
+                                )
+                              }
+                            />
+                            <label className="form-check-label">{choice}</label>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {quiz.questions[currentQuestionIndex].type ===
+                      "FILL_BLANK" && (
+                      <div className="form-group">
+                        <input
+                          type="text"
+                          className="form-control"
+                          value={
+                            answers.find(
+                              (a) =>
+                                a.questionId ===
+                                quiz.questions[currentQuestionIndex]._id
+                            )?.textAnswer || ""
+                          }
+                          onChange={(e) =>
+                            handleAnswerChange(
+                              quiz.questions[currentQuestionIndex]._id,
+                              { textAnswer: e.target.value }
+                            )
+                          }
+                          placeholder="Enter your answer"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="navigation-buttons mt-4 d-flex justify-content-between">
                 <button
-                  type="button"
-                  className="btn-close"
-                  onClick={() => setShowSubmitConfirm(false)}
-                />
-              </div>
-              <div className="modal-body">
-                Are you sure you want to submit this quiz? You won't be able to
-                change your answers after submission.
-              </div>
-              <div className="modal-footer">
-                <button
-                  type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowSubmitConfirm(false)}
+                  disabled={currentQuestionIndex === 0}
+                  onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
                 >
-                  Cancel
+                  Previous
                 </button>
                 <button
-                  type="button"
                   className="btn btn-success"
-                  onClick={confirmSubmit}
+                  onClick={() => setShowSubmitConfirm(true)}
                 >
                   Submit Quiz
                 </button>
+                <button
+                  className="btn btn-primary"
+                  disabled={currentQuestionIndex === quiz.questions.length - 1}
+                  onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
+                >
+                  Next
+                </button>
               </div>
             </div>
-          </div>
-        </div>
+          )}
+
+          {submitted && viewingAttemptNumber ? (
+            <>
+              <div className="alert alert-success mb-4">
+                <h4>Quiz Results - Attempt {viewingAttemptNumber}</h4>
+                <p>
+                  Score: {score} out of {quiz.points} points
+                </p>
+                <p>
+                  Submitted:{" "}
+                  {new Date(
+                    attempts.find(
+                      (a) => a.attemptNumber === viewingAttemptNumber
+                    )?.submittedAt || ""
+                  ).toLocaleString()}
+                </p>
+              </div>
+
+              {quiz.questions.map((question: any, index: number) => {
+                const currentAttempt = attempts.find(
+                  (a) => a.attemptNumber === viewingAttemptNumber
+                );
+                return (
+                  <div
+                    key={question._id}
+                    className={`card mb-3 ${
+                      currentAttempt?.isCorrectByQuestion[question._id]
+                        ? "border-success"
+                        : "border-danger"
+                    }`}
+                  >
+                    <div className="card-header">
+                      Question {index + 1}
+                      {currentAttempt?.isCorrectByQuestion[question._id] ? (
+                        <FaCheckCircle className="text-success ms-2" />
+                      ) : (
+                        <FaTimesCircle className="text-danger ms-2" />
+                      )}
+                    </div>
+                    <div className="card-body">
+                      <p>{question.questionText}</p>
+                      {/* Show the user's answer */}
+                      <div className="mt-3">
+                        <strong>Your Answer:</strong>
+                        {currentAttempt?.answers.find(
+                          (a) => a.questionId === question._id
+                        )?.selectedChoice !== undefined && (
+                          <p>
+                            {
+                              question.choices[
+                                currentAttempt.answers.find(
+                                  (a) => a.questionId === question._id
+                                )?.selectedChoice || 0
+                              ]
+                            }
+                          </p>
+                        )}
+                        {currentAttempt?.answers.find(
+                          (a) => a.questionId === question._id
+                        )?.textAnswer && (
+                          <p>
+                            {
+                              currentAttempt.answers.find(
+                                (a) => a.questionId === question._id
+                              )?.textAnswer
+                            }
+                          </p>
+                        )}
+                      </div>
+                      {/* Show correct answer */}
+                      <div className="mt-2 text-success">
+                        <strong>Correct Answer:</strong>
+                        {question.type === "MULTIPLE_CHOICE" && (
+                          <p>{question.choices[question.correctChoice]}</p>
+                        )}
+                        {question.type === "FILL_BLANK" && (
+                          <p>{question.correctAnswer}</p>
+                        )}
+                        {question.type === "TRUE_FALSE" && (
+                          <p>{question.correctAnswer ? "True" : "False"}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          ) : null}
+
+          {showSubmitConfirm && timeRemaining !== 0 && (
+            <div className="modal show d-block" tabIndex={-1}>
+              <div className="modal-dialog">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <h5 className="modal-title">Submit Quiz</h5>
+                    <button
+                      type="button"
+                      className="btn-close"
+                      onClick={() => setShowSubmitConfirm(false)}
+                    ></button>
+                  </div>
+                  <div className="modal-body">
+                    <p>
+                      Are you sure you want to submit this quiz? You won't be
+                      able to change your answers after submission.
+                    </p>
+                  </div>
+                  <div className="modal-footer">
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setShowSubmitConfirm(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-success"
+                      onClick={() => {
+                        submitQuiz();
+                        setShowSubmitConfirm(false);
+                      }}
+                    >
+                      Submit Quiz
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -3,6 +3,23 @@ const REMOTE_SERVER = process.env.REACT_APP_REMOTE_SERVER;
 const COURSES_API = `${REMOTE_SERVER}/api/courses`;
 const QUIZZES_API = `${REMOTE_SERVER}/api/quizzes`;
 
+interface Answer {
+  questionId: string;
+  selectedChoice?: number;
+  selectedAnswer?: boolean;
+  textAnswer?: string;
+  isCorrect?: boolean;
+}
+
+interface QuizAttempt {
+  attemptNumber: number;
+  studentId: string;
+  answers: Answer[];
+  score: number;
+  submittedAt: string;
+  isCorrectByQuestion: { [key: string]: boolean };
+}
+
 export const findQuizzesForCourse = async (courseId: string) => {
   const response = await axios.get(`${COURSES_API}/${courseId}/quizzes`);
   return response.data;
@@ -47,4 +64,35 @@ export const deleteQuestionFromQuiz = async (
   questionId: string
 ) => {
   await axios.delete(`${QUIZZES_API}/${quizId}/questions/${questionId}`);
+};
+
+export const saveQuizAttempt = async (quizId: string, attempt: QuizAttempt) => {
+  console.log("Saving attempt:", attempt);
+  try {
+    const response = await axios.post(
+      `${QUIZZES_API}/${quizId}/attempts`,
+      attempt
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error("Error details:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
+export const getQuizAttempts = async (quizId: string, studentId: string) => {
+  const response = await axios.get(
+    `${QUIZZES_API}/${quizId}/attempts/${studentId}`
+  );
+  return response.data;
+};
+export const getSpecificQuizAttempt = async (
+  quizId: string,
+  studentId: string,
+  attemptNumber: number
+) => {
+  const response = await axios.get(
+    `${QUIZZES_API}/${quizId}/attempts/${studentId}/${attemptNumber}`
+  );
+  return response.data;
 };
