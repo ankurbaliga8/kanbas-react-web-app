@@ -101,7 +101,18 @@ export default function QuizPreview() {
         (q: any) => q._id === answer.questionId
       );
       if (question) {
-        if (
+        if (question.type === "FILL_BLANK") {
+          const userAnswer = answer.textAnswer?.toLowerCase().trim();
+          const possibleAnswers = question.possibleAnswers || [
+            question.correctAnswer,
+          ];
+          const isCorrect = possibleAnswers.some(
+            (possible: string) => possible?.toLowerCase().trim() === userAnswer
+          );
+          if (isCorrect) {
+            totalScore += question.points;
+          }
+        } else if (
           question.type === "MULTIPLE_CHOICE" &&
           answer.selectedChoice === question.correctChoice
         ) {
@@ -114,6 +125,7 @@ export default function QuizPreview() {
         }
       }
     });
+    console.log("Total score:", totalScore);
     return totalScore;
   };
 
@@ -225,6 +237,25 @@ export default function QuizPreview() {
                       {choice}
                     </label>
                   ))}
+                </div>
+              )}
+
+              {currentQuestion.type === "FILL_BLANK" && (
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Type your answer here"
+                    value={
+                      answers.find((a) => a.questionId === currentQuestion._id)
+                        ?.textAnswer || ""
+                    }
+                    onChange={(e) =>
+                      handleAnswerChange(currentQuestion._id, {
+                        textAnswer: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               )}
             </div>

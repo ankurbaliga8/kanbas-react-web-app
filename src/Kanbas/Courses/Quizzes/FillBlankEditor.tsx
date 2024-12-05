@@ -10,6 +10,18 @@ export default function FillBlankEditor({
   question,
   onChange,
 }: FillBlankEditorProps) {
+  React.useEffect(() => {
+    if (
+      question.correctAnswer &&
+      (!question.possibleAnswers || question.possibleAnswers.length === 0)
+    ) {
+      onChange({
+        ...question,
+        possibleAnswers: [question.correctAnswer],
+      });
+    }
+  }, []);
+
   const addPossibleAnswer = () => {
     onChange({
       ...question,
@@ -28,7 +40,7 @@ export default function FillBlankEditor({
   };
 
   const updatePossibleAnswer = (index: number, value: string) => {
-    const newAnswers = [...question.possibleAnswers];
+    const newAnswers = [...(question.possibleAnswers || [])];
     newAnswers[index] = value;
     onChange({
       ...question,
