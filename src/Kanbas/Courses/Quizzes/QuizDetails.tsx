@@ -105,10 +105,34 @@ export default function QuizDetails() {
     }
   };
 
+  const getHighestScore = (attempts: QuizAttempt[]) => {
+    if (!attempts || attempts.length === 0) return 0;
+    return Math.max(...attempts.map((attempt) => attempt.score));
+  };
+
+  const canAttemptQuiz = () => {
+    if (!quiz.multipleAttempts && attempts.length > 0) {
+      return false;
+    }
+    if (quiz.multipleAttempts && quiz.maxAttempts) {
+      return attempts.length < quiz.maxAttempts;
+    }
+    return true;
+  };
+
   return (
     <div className="p-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>{quiz.title}</h2>
+        <div>
+          <h2>{quiz.title}</h2>
+          {!isFaculty && attempts.length > 0 && (
+            <div className="text-success">
+              <h4>
+                Score: {getHighestScore(attempts)} / {quiz.points}
+              </h4>
+            </div>
+          )}
+        </div>
         <div>
           {isFaculty ? (
             <>
@@ -131,17 +155,28 @@ export default function QuizDetails() {
               </button>
             </>
           ) : (
-            <button
-              className="btn btn-success"
-              onClick={() =>
-                navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/preview`)
-              }
-              disabled={
-                !quiz.published || getAvailabilityStatus(quiz) !== "Available"
-              }
-            >
-              Start Quiz
-            </button>
+            <div>
+              {!canAttemptQuiz() && (
+                <div className="alert alert-warning mb-2">
+                  {quiz.multipleAttempts
+                    ? `Maximum attempts (${quiz.maxAttempts}) reached`
+                    : "You have already attempted this quiz"}
+                </div>
+              )}
+              <button
+                className="btn btn-success"
+                onClick={() =>
+                  navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/preview`)
+                }
+                disabled={
+                  !quiz.published ||
+                  getAvailabilityStatus(quiz) !== "Available" ||
+                  !canAttemptQuiz()
+                }
+              >
+                Start Quiz
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -202,7 +237,11 @@ export default function QuizDetails() {
                 <td className="text-end pe-4">
                   <strong>Multiple Attempts</strong>
                 </td>
-                <td>{quiz?.multipleAttempts ? "Yes" : "No"}</td>
+                <td>
+                  {quiz?.multipleAttempts
+                    ? `Yes (${quiz.maxAttempts} attempts allowed)`
+                    : "No"}
+                </td>
               </tr>
               <tr>
                 <td className="text-end pe-4">

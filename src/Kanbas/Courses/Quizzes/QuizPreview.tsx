@@ -320,6 +320,11 @@ export default function QuizPreview() {
     loadAttempts();
   }, [qid, currentUser._id]);
 
+  const getHighestScore = (attempts: QuizAttempt[]) => {
+    if (!attempts || attempts.length === 0) return 0;
+    return Math.max(...attempts.map((attempt) => attempt.score));
+  };
+
   if (loading) {
     return <div className="p-4">Loading quiz preview...</div>;
   }
@@ -364,6 +369,16 @@ export default function QuizPreview() {
 
   const isViewingPreviousAttempt = viewingAttemptNumber !== null;
 
+  const canAttemptQuiz = () => {
+    if (!quiz.multipleAttempts && attempts.length > 0) {
+      return false;
+    }
+    if (quiz.multipleAttempts && quiz.maxAttempts) {
+      return attempts.length < quiz.maxAttempts;
+    }
+    return true;
+  };
+
   return (
     <div className="p-4">
       {!quiz ? (
@@ -392,29 +407,44 @@ export default function QuizPreview() {
 
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h2>{quiz.title}</h2>
-            {!isFaculty && timeRemaining !== null && !submitted && (
-              <div
-                className={`alert ${
-                  timeRemaining < 60 ? "alert-danger" : "alert-info"
-                } mb-0`}
-              >
-                Time Remaining: {Math.floor(timeRemaining / 60)}:
-                {String(timeRemaining % 60).padStart(2, "0")}
-              </div>
-            )}
-            {isFaculty && (
-              <button
-                className="btn btn-primary"
-                onClick={() =>
-                  navigate(
-                    `/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/questions`
-                  )
-                }
-              >
-                <BsPencilSquare className="me-2" />
-                Edit Quiz
-              </button>
-            )}
+            <div className="d-flex align-items-center gap-3">
+              {!isFaculty && attempts.length > 0 && (
+                <div className="alert alert-info mb-0 d-flex gap-3">
+                  {viewingAttemptNumber && (
+                    <div>
+                      <strong>Current Score:</strong> {score} / {quiz.points}
+                    </div>
+                  )}
+                  <div>
+                    <strong>Highest Score:</strong> {getHighestScore(attempts)}{" "}
+                    / {quiz.points}
+                  </div>
+                </div>
+              )}
+              {!isFaculty && timeRemaining !== null && !submitted && (
+                <div
+                  className={`alert ${
+                    timeRemaining < 60 ? "alert-danger" : "alert-info"
+                  } mb-0`}
+                >
+                  Time Remaining: {Math.floor(timeRemaining / 60)}:
+                  {String(timeRemaining % 60).padStart(2, "0")}
+                </div>
+              )}
+              {isFaculty && (
+                <button
+                  className="btn btn-primary"
+                  onClick={() =>
+                    navigate(
+                      `/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/questions`
+                    )
+                  }
+                >
+                  <BsPencilSquare className="me-2" />
+                  Edit Quiz
+                </button>
+              )}
+            </div>
           </div>
 
           {!submitted && quiz && (
@@ -565,6 +595,11 @@ export default function QuizPreview() {
                 <p>
                   Score: {score} out of {quiz.points} points
                 </p>
+                {quiz.multipleAttempts && (
+                  <p>
+                    Attempts used: {attempts.length} / {quiz.maxAttempts || "∞"}
+                  </p>
+                )}
                 <p>
                   Submitted:{" "}
                   {new Date(
@@ -601,6 +636,7 @@ export default function QuizPreview() {
                       {/* Show the user's answer */}
                       <div className="mt-3">
                         <strong>Your Answer:</strong>
+                        {/* Multiple Choice Answer */}
                         {currentAttempt?.answers.find(
                           (a) => a.questionId === question._id
                         )?.selectedChoice !== undefined && (
@@ -614,6 +650,19 @@ export default function QuizPreview() {
                             }
                           </p>
                         )}
+                        {/* True/False Answer */}
+                        {currentAttempt?.answers.find(
+                          (a) => a.questionId === question._id
+                        )?.selectedAnswer !== undefined && (
+                          <p>
+                            {currentAttempt.answers.find(
+                              (a) => a.questionId === question._id
+                            )?.selectedAnswer
+                              ? "True"
+                              : "False"}
+                          </p>
+                        )}
+                        {/* Fill in the Blank Answer */}
                         {currentAttempt?.answers.find(
                           (a) => a.questionId === question._id
                         )?.textAnswer && (
@@ -626,19 +675,23 @@ export default function QuizPreview() {
                           </p>
                         )}
                       </div>
-                      {/* Show correct answer */}
-                      <div className="mt-2 text-success">
-                        <strong>Correct Answer:</strong>
-                        {question.type === "MULTIPLE_CHOICE" && (
-                          <p>{question.choices[question.correctChoice]}</p>
+                      {/* Show correct answer only if allowed */}
+                      {quiz.showCorrectAnswers &&
+                        (!quiz.multipleAttempts ||
+                          currentUser?.role !== "STUDENT") && (
+                          <div className="mt-2 text-success">
+                            <strong>Correct Answer:</strong>
+                            {question.type === "MULTIPLE_CHOICE" && (
+                              <p>{question.choices[question.correctChoice]}</p>
+                            )}
+                            {question.type === "FILL_BLANK" && (
+                              <p>{question.correctAnswer}</p>
+                            )}
+                            {question.type === "TRUE_FALSE" && (
+                              <p>{question.correctAnswer ? "True" : "False"}</p>
+                            )}
+                          </div>
                         )}
-                        {question.type === "FILL_BLANK" && (
-                          <p>{question.correctAnswer}</p>
-                        )}
-                        {question.type === "TRUE_FALSE" && (
-                          <p>{question.correctAnswer ? "True" : "False"}</p>
-                        )}
-                      </div>
                     </div>
                   </div>
                 );

@@ -132,6 +132,22 @@ export default function Details({ quiz, setQuiz }: any) {
           <label className="form-check-label">Multiple Attempts</label>
         </div>
 
+        {quiz.multipleAttempts && (
+          <div className="mb-2">
+            <label className="form-label">Number of Attempts Allowed</label>
+            <input
+              type="number"
+              className="form-control"
+              name="maxAttempts"
+              value={quiz.maxAttempts || 0}
+              onChange={handleChange}
+              min="2"
+              step="1"
+              onWheel={(e) => e.currentTarget.blur()}
+            />
+          </div>
+        )}
+
         <div className="form-check mb-2">
           <input
             type="checkbox"
