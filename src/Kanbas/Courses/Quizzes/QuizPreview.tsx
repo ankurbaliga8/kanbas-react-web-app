@@ -291,7 +291,7 @@ export default function QuizPreview() {
             if (timerInterval) {
               clearInterval(timerInterval);
             }
-            submitQuiz(); // Single submission when timer hits 0
+            setShowSubmitConfirm(true);
             return 0;
           }
           return prev - 1;
@@ -699,32 +699,40 @@ export default function QuizPreview() {
             </>
           ) : null}
 
-          {showSubmitConfirm && timeRemaining !== 0 && (
+          {showSubmitConfirm && (
             <div className="modal show d-block" tabIndex={-1}>
               <div className="modal-dialog">
                 <div className="modal-content">
                   <div className="modal-header">
                     <h5 className="modal-title">Submit Quiz</h5>
-                    <button
-                      type="button"
-                      className="btn-close"
-                      onClick={() => setShowSubmitConfirm(false)}
-                    ></button>
+                    {timeRemaining !== 0 && (
+                      <button
+                        type="button"
+                        className="btn-close"
+                        onClick={() => setShowSubmitConfirm(false)}
+                      ></button>
+                    )}
                   </div>
                   <div className="modal-body">
-                    <p>
-                      Are you sure you want to submit this quiz? You won't be
-                      able to change your answers after submission.
-                    </p>
+                    {timeRemaining === 0 ? (
+                      <p>Time's up! Please submit your quiz now.</p>
+                    ) : (
+                      <p>
+                        Are you sure you want to submit this quiz? You won't be
+                        able to change your answers after submission.
+                      </p>
+                    )}
                   </div>
                   <div className="modal-footer">
-                    <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => setShowSubmitConfirm(false)}
-                    >
-                      Cancel
-                    </button>
+                    {timeRemaining !== 0 && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowSubmitConfirm(false)}
+                      >
+                        Cancel
+                      </button>
+                    )}
                     <button
                       type="button"
                       className="btn btn-success"
