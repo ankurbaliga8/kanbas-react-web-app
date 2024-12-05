@@ -18,6 +18,7 @@ interface BaseQuestion {
 
 interface QuestionEditorProps {
   question: BaseQuestion;
+  questionIndex: number;
   onSave: (question: BaseQuestion) => void;
   onCancel: () => void;
   onDelete: () => void;
@@ -25,6 +26,7 @@ interface QuestionEditorProps {
 
 export default function QuestionEditor({
   question,
+  questionIndex,
   onSave,
   onCancel,
   onDelete,
@@ -89,20 +91,13 @@ export default function QuestionEditor({
               <span className="pt-2">pts</span>
             </div>
           </div>
-          <button className="btn btn-danger" onClick={onDelete}>
+          <button className="btn btn-danger" onClick={() => onDelete()}>
             <BsTrash />
           </button>
         </div>
 
         <div className="mb-3">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Question Title"
-            name="title"
-            value={editedQuestion.title}
-            onChange={handleChange}
-          />
+          <h5>Question {questionIndex + 1}</h5>
         </div>
 
         <div className="mb-3">

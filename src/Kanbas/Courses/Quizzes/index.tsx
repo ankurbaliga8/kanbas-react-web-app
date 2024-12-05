@@ -25,6 +25,9 @@ export default function Quizzes() {
   const isFaculty = currentUser?.role === "FACULTY";
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuizId, setSelectedQuizId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const loadQuizzes = async () => {
@@ -72,10 +75,17 @@ export default function Quizzes() {
     }
   };
 
-  const handleDeleteQuiz = async (quizId: string) => {
+  const handleDeleteClick = (quizId: string) => {
+    setShowDeleteConfirm(quizId);
+    setSelectedQuizId(null); // Close the dropdown
+  };
+
+  const confirmDelete = async (quizId: string) => {
     try {
-      await deleteQuizAPI(quizId);
-      dispatch(deleteQuiz(quizId));
+      await deleteQuiz(quizId);
+      const quizzes = await findQuizzesForCourse(cid!);
+      dispatch(setQuizzes(quizzes));
+      setShowDeleteConfirm(null);
     } catch (error) {
       console.error("Error deleting quiz:", error);
     }
@@ -215,7 +225,7 @@ export default function Quizzes() {
                       </button>
                       <button
                         className="btn btn-link text-start w-100 text-decoration-none"
-                        onClick={() => handleDeleteQuiz(quiz._id)}
+                        onClick={() => handleDeleteClick(quiz._id)}
                       >
                         Delete
                       </button>
@@ -240,6 +250,46 @@ export default function Quizzes() {
           </div>
         )}
       </div>
+
+      {showDeleteConfirm && (
+        <div
+          className="modal d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Delete Quiz</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowDeleteConfirm(null)}
+                />
+              </div>
+              <div className="modal-body">
+                Are you sure you want to delete this quiz? This action cannot be
+                undone.
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowDeleteConfirm(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => confirmDelete(showDeleteConfirm)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

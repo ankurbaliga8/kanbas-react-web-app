@@ -24,6 +24,9 @@ export default function Questions({ quiz, setQuiz }: any) {
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(
     null
   );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(
+    null
+  );
 
   useEffect(() => {
     const loadQuizzes = async () => {
@@ -44,9 +47,10 @@ export default function Questions({ quiz, setQuiz }: any) {
   }
 
   const addNewQuestion = () => {
+    const questionNumber = quiz.questions.length + 1;
     const newQuestion: BaseQuestion = {
       _id: Date.now().toString(),
-      title: "New Question",
+      title: `Question ${questionNumber}`,
       points: 1,
       questionText: "",
       type: "MULTIPLE_CHOICE",
@@ -96,6 +100,10 @@ export default function Questions({ quiz, setQuiz }: any) {
   };
 
   const handleDeleteQuestion = (questionId: string) => {
+    setShowDeleteConfirm(questionId);
+  };
+
+  const confirmDelete = (questionId: string) => {
     setQuiz((prev: any) => ({
       ...prev,
       questions: Array.isArray(prev.questions)
@@ -103,6 +111,7 @@ export default function Questions({ quiz, setQuiz }: any) {
         : [],
     }));
     setEditingQuestionId(null);
+    setShowDeleteConfirm(null);
   };
 
   const calculateTotalPoints = () => {
@@ -138,11 +147,12 @@ export default function Questions({ quiz, setQuiz }: any) {
 
       <div className="questions-list">
         {(Array.isArray(quiz.questions) ? quiz.questions : []).map(
-          (question: BaseQuestion) => (
+          (question: BaseQuestion, index: number) => (
             <div key={question._id} className="mb-4">
               {editingQuestionId === question._id ? (
                 <QuestionEditor
                   question={question}
+                  questionIndex={index}
                   onSave={handleSaveQuestion}
                   onCancel={() => setEditingQuestionId(null)}
                   onDelete={() => handleDeleteQuestion(question._id)}
@@ -151,7 +161,7 @@ export default function Questions({ quiz, setQuiz }: any) {
                 <div className="card">
                   <div className="card-body">
                     <div className="d-flex justify-content-between">
-                      <h5 className="card-title">{question.title}</h5>
+                      <h5 className="card-title">Question {index + 1}</h5>
                       <button
                         className="btn btn-outline-primary"
                         onClick={() => setEditingQuestionId(question._id)}
@@ -172,6 +182,45 @@ export default function Questions({ quiz, setQuiz }: any) {
       {(!Array.isArray(quiz.questions) || quiz.questions.length === 0) && (
         <div className="text-center text-muted my-5">
           <p>No questions yet. Click "New Question" to add one.</p>
+        </div>
+      )}
+
+      {showDeleteConfirm && (
+        <div
+          className="modal d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+        >
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Delete Question</h5>
+                <button
+                  type="button"
+                  className="btn-close"
+                  onClick={() => setShowDeleteConfirm(null)}
+                />
+              </div>
+              <div className="modal-body">
+                Are you sure you want to delete this question?
+              </div>
+              <div className="modal-footer">
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowDeleteConfirm(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => confirmDelete(showDeleteConfirm)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

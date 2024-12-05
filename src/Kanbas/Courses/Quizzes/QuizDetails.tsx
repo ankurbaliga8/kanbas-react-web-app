@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { BsPencilSquare } from "react-icons/bs";
 import { findQuizzesForCourse } from "./client";
 import { setQuizzes } from "./reducer";
+import QuizPreview from "./QuizPreview";
 
 export default function QuizDetails() {
   const { cid, qid } = useParams();
@@ -50,24 +51,73 @@ export default function QuizDetails() {
     return new Date(date).toLocaleDateString();
   };
 
+  const getAvailabilityStatus = (quiz: any) => {
+    const now = new Date();
+    const availableFrom = new Date(quiz.availableFrom);
+    const availableUntil = new Date(quiz.availableUntil);
+
+    if (now > availableUntil) {
+      return "Closed";
+    } else if (now >= availableFrom && now <= availableUntil) {
+      return "Available";
+    } else {
+      return `Not available until ${new Date(
+        quiz.availableFrom
+      ).toLocaleDateString()}`;
+    }
+  };
+
   return (
     <div className="p-4">
-      <div className="d-flex justify-content-end mb-3">
-        <button className="btn btn-secondary me-2">Preview</button>
-        {isFaculty && (
-          <button
-            className="btn btn-primary"
-            onClick={() =>
-              navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/details`)
-            }
-          >
-            <BsPencilSquare className="me-2" />
-            Edit
-          </button>
-        )}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h2>{quiz.title}</h2>
+        <div>
+          {isFaculty ? (
+            <>
+              <button
+                className="btn btn-secondary me-2"
+                onClick={() =>
+                  navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/preview`)
+                }
+              >
+                Preview
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() =>
+                  navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/edit/details`)
+                }
+              >
+                <BsPencilSquare className="me-2" />
+                Edit
+              </button>
+            </>
+          ) : (
+            <button
+              className="btn btn-success"
+              onClick={() =>
+                navigate(`/Kanbas/Courses/${cid}/Quizzes/${qid}/preview`)
+              }
+              disabled={
+                !quiz.published || getAvailabilityStatus(quiz) !== "Available"
+              }
+            >
+              Start Quiz
+            </button>
+          )}
+        </div>
       </div>
 
-      <h2 className="mb-3">{quiz.title}</h2>
+      {!quiz.published && !isFaculty && (
+        <div className="alert alert-warning">
+          This quiz is not yet available.
+        </div>
+      )}
+
+      {getAvailabilityStatus(quiz) !== "Available" && !isFaculty && (
+        <div className="alert alert-info">{getAvailabilityStatus(quiz)}</div>
+      )}
+
       <hr className="mb-4" />
 
       <div className="row justify-content-center">
@@ -169,10 +219,6 @@ export default function QuizDetails() {
               </tr>
             </tbody>
           </table>
-
-          {!isFaculty && (
-            <button className="btn btn-primary mt-3">Start Quiz</button>
-          )}
         </div>
       </div>
     </div>
