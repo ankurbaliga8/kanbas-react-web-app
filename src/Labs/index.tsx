@@ -14,10 +14,10 @@ export default function Labs() {
         <h1>Labs</h1>
         <h2>Team Cursors</h2>
         <p>
-          <strong>Mangalpady Ankur Baliga</strong>
+          <strong>Mangalpady Ankur Baliga (Section 1)</strong>
         </p>
         <p>
-          <strong>Sayantan Datta</strong>
+          <strong>Sayantan Datta (Section 1)</strong>
         </p>
         <a
           id="wd-github"
