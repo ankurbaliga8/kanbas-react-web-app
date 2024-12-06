@@ -12,7 +12,13 @@ export default function Labs() {
     <Provider store={store}>
       <div id="wd-labs">
         <h1>Labs</h1>
-        <p>Mangalpady Ankur Baliga</p>
+        <h2>Team Cursors</h2>
+        <p>
+          <strong>Mangalpady Ankur Baliga</strong>
+        </p>
+        <p>
+          <strong>Sayantan Datta</strong>
+        </p>
         <a
           id="wd-github"
           href="https://github.com/ankurbaliga8/kanbas-react-web-app"
